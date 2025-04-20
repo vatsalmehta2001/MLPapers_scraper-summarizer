@@ -10,35 +10,37 @@
     {% block extra_css %}{% endblock %}
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-        <div class="container">
-            <a class="navbar-brand" href="{{ url_for('index') }}">ML Papers Summarizer</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('index') }}">Home</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('categories') }}">Categories</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('about') }}">About</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('admin') }}">Admin</a>
-                    </li>
-                </ul>
-                <div class="d-flex">
-                    <button type="button" class="btn btn-light" data-bs-toggle="modal" data-bs-target="#fetchPapersModal">
-                        <i class="fas fa-sync-alt"></i> Fetch New Papers
-                    </button>
+    <header>
+        <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+            <div class="container">
+                <a class="navbar-brand" href="{{ url_for('index') }}">ML Papers Summarizer</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain" aria-controls="navbarMain" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarMain">
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('index') }}">Home</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('categories') }}">Categories</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('about') }}">About</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('admin') }}">Admin</a>
+                        </li>
+                    </ul>
+                    <div class="d-flex">
+                        <a href="{{ url_for('search_papers') }}" class="btn btn-outline-light me-2">
+                            <i class="fas fa-search"></i> Search
+                        </a>
+                    </div>
                 </div>
             </div>
-        </div>
-    </nav>
+        </nav>
+    </header>
 
     <!-- Flash messages -->
     <div class="container mt-3">
@@ -58,50 +60,18 @@
         {% block content %}{% endblock %}
     </main>
 
-    <footer class="bg-light py-4 mt-5">
+    <!-- Footer -->
+    <footer class="footer mt-auto py-3 bg-light">
         <div class="container text-center">
-            <p class="mb-0">&copy; {{ year }} ML Papers Summarizer. All rights reserved.</p>
-            <p class="text-muted small mb-0">Powered by arXiv API and NLP models.</p>
+            <span class="text-muted">© {{ year }} ML Papers Summarizer. All rights reserved.</span>
+            <div class="text-muted mt-1">
+                <small>Powered by arXiv API and NLP models.</small>
+            </div>
         </div>
     </footer>
 
-    <!-- Fetch Papers Modal -->
-    <div class="modal fade" id="fetchPapersModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Fetch New Papers</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <form action="{{ url_for('fetch_papers') }}" method="post">
-                    <div class="modal-body">
-                        <div class="mb-3">
-                            <label for="days" class="form-label">Days to look back</label>
-                            <input type="number" class="form-control" id="days" name="days" value="7" min="1" max="30">
-                        </div>
-                        <div class="mb-3">
-                            <label for="max_results" class="form-label">Maximum papers to fetch</label>
-                            <input type="number" class="form-control" id="max_results" name="max_results" value="10" min="1" max="50">
-                        </div>
-                        <div class="mb-3">
-                            <label for="categories" class="form-label">Categories (comma separated)</label>
-                            <input type="text" class="form-control" id="categories" name="categories" value="cs.AI,cs.LG,cs.CL" placeholder="e.g. cs.AI,cs.LG">
-                        </div>
-                        <div class="alert alert-info">
-                            <small>This process may take a while depending on the number of papers to fetch and summarize.</small>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary">Fetch Papers</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
+    <!-- JavaScript -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
-    {% block extra_js %}{% endblock %}
 </body>
 </html> 

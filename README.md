@@ -1,64 +1,96 @@
-# ML Papers Scraper & Summarizer
+# MLPapers Scraper and Summarizer
 
-A personal portfolio project that automatically scrapes recent Machine Learning research papers from arXiv and generates concise, easy-to-understand summaries. Built to enhance my skills in Python, Flask, API integration, and ML content processing.
-
-## Project Purpose
-
-I built this application to:
-- Showcase my ability to create full-stack web applications with modern tools
-- Demonstrate API integration skills (arXiv API for papers, OpenAI API for summaries)
-- Create a practical tool for keeping up with ML research for my own studies
-- Practice database design and SQLAlchemy integration
+A web application that scrapes recent Machine Learning research papers from arXiv and generates summaries using either OpenAI or Claude API.
 
 ## Features
 
-- Scrapes recent ML papers from arXiv based on selected categories (CS.AI, CS.LG, CS.CL)
-- Generates layman-friendly summaries using OpenAI API (with fallback to rule-based summaries)
-- Web interface to browse, search and organize papers
-- Admin section to manage papers and regenerate summaries
-- Responsive Bootstrap UI with dark/light theme
-
-## Notes on OpenAI Integration
-
-The app can work in two modes:
-1. **With valid OpenAI API key**: Generates high-quality summaries using GPT models
-2. **Without API key/quota**: Falls back to extractive summarization using key sentence extraction
-
-To use the OpenAI integration, you'll need to:
-- Create an account at [platform.openai.com](https://platform.openai.com)
-- Generate an API key and add billing information
-- Add your key to the `.env` file
+- Automated scraping of recent ML research papers from arXiv
+- AI-powered paper summarization with OpenAI or Claude
+- Web interface to browse and read papers and summaries
+- Admin panel to manage papers and trigger manual updates
+- Flexible API provider selection - use either OpenAI or Claude
 
 ## Setup
 
 1. Clone the repository
-2. Install dependencies:
+   ```
+   git clone <repository-url>
+   cd MLPapers_scraper-summarizer
+   ```
+
+2. Create and activate a virtual environment
+   ```
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
+
+3. Install dependencies
    ```
    pip install -r requirements.txt
    ```
-3. Set up environment variables:
-   ```
-   cp .env.example .env
-   # Edit .env with your own API keys
-   ```
-4. Run the application:
+
+4. Set up environment variables
+   - Copy `.env.example` to `.env`
+   - Configure your API keys (see API Configuration section)
+
+5. Run the application
    ```
    python app.py
    ```
+   
+6. Access the web interface at `http://localhost:5001`
 
-## Project Structure
+## API Configuration
 
-- `scraper/`: Code for scraping research papers from arXiv
-- `summarizer/`: NLP models and OpenAI integration for summarization
-- `app.py`: Main Flask application with routes and controllers
-- `database.py`: SQLAlchemy models and database operations
-- `templates/`: Web UI templates using Bootstrap
-- `static/`: CSS, JS, and other static assets
+The application supports two AI providers for generating summaries:
 
-## Future Enhancements
+### Option 1: OpenAI API
+1. Go to https://platform.openai.com/account/api-keys to get your API key
+2. Add your key to the `.env` file:
+   ```
+   OPENAI_API_KEY=sk-your-openai-key-goes-here
+   ```
 
-- User authentication for personalized paper collections
-- PDF parsing for full paper analysis
-- Citation network visualization
-- Email notifications for new papers in selected topics
-- Enhanced offline summarization using local LLMs 
+### Option 2: Claude API
+1. Go to https://console.anthropic.com/ to get your API key
+2. Add your key to the `.env` file:
+   ```
+   ANTHROPIC_API_KEY=sk-ant-your-key-goes-here
+   ```
+
+You can provide either one or both API keys. The application is designed to work with just one of the services if needed.
+
+## Switching Between API Providers
+
+In the Admin Panel, you can select which API provider to use for summarization:
+
+1. **Auto (default)**: The application will automatically use available APIs, with Claude preferred if both are available
+2. **OpenAI**: Force using OpenAI's GPT model even if Claude is available
+3. **Claude**: Force using Claude even if OpenAI is available
+
+You can also check the API connection status with the API Diagnostics tool in the Admin Panel.
+
+## Usage
+
+- **Home Page**: View recently scraped papers
+- **Paper Details**: Click on a paper to view its details and AI-generated summary
+- **Admin Panel**: Access admin functionality to manage papers and trigger updates
+  - Set API provider preferences
+  - Check API status
+  - Generate missing summaries
+
+## Troubleshooting
+
+If you encounter API issues:
+
+1. Check your API keys are correctly set in the `.env` file
+2. Use the API Diagnostics tool in the Admin Panel to test connections
+3. Look at the `app.log` and `summarizer.log` files for detailed error messages
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+[MIT License](LICENSE) 

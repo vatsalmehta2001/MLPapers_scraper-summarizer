@@ -40,6 +40,33 @@
                         <i class="fas fa-sync-alt"></i> Fetch Papers
                     </button>
                 </form>
+                
+                <!-- API Configuration -->
+                <hr>
+                <h5>API Configuration</h5>
+                <div class="alert alert-info">
+                    <p>Currently using: <strong>{{ current_api_provider }}</strong> API for summarization</p>
+                </div>
+                
+                <div class="mb-3">
+                    <form action="{{ url_for('set_api_provider') }}" method="post" class="d-inline">
+                        <div class="input-group mb-3">
+                            <select class="form-select" name="api_provider">
+                                <option value="auto" {% if current_api_provider == "auto" %}selected{% endif %}>Auto (Use available API)</option>
+                                <option value="OpenAI" {% if current_api_provider == "OpenAI" %}selected{% endif %}>OpenAI GPT</option>
+                                <option value="Claude" {% if current_api_provider == "Claude" %}selected{% endif %}>Claude</option>
+                            </select>
+                            <button class="btn btn-outline-primary" type="submit">Set API Provider</button>
+                        </div>
+                    </form>
+                </div>
+                
+                <!-- API Test -->
+                <div class="mb-3">
+                    <a href="{{ url_for('debug_api_check') }}" class="btn btn-info">
+                        <i class="fas fa-stethoscope"></i> API Diagnostics
+                    </a>
+                </div>
             </div>
         </div>
         
@@ -66,7 +93,7 @@
                                 </td>
                                 <td>{{ paper.published_date.strftime('%Y-%m-%d') }}</td>
                                 <td>
-                                    <form action="{{ url_for('summarize_paper', arxiv_id=paper.arxiv_id) }}" method="post" class="d-inline">
+                                    <form action="{{ url_for('generate_summary', arxiv_id=paper.arxiv_id) }}" method="post" class="d-inline">
                                         <button type="submit" class="btn btn-sm btn-primary">
                                             <i class="fas fa-magic"></i> Generate Summary
                                         </button>

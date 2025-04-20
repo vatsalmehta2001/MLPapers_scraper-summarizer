@@ -40,38 +40,38 @@
             </ol>
         </nav>
 
-        <h1 class="mb-4">OpenAI API Connection Status</h1>
+        <h1 class="mb-4">AI API Connection Status</h1>
         
         <div class="diagnostic-section">
-            <h3>API Diagnostics</h3>
+            <h3>OpenAI API Diagnostics</h3>
             <table class="table">
                 <tbody>
                     <tr>
                         <th scope="row" style="width: 200px;">API Key Status:</th>
                         <td>
-                            {% if "Not set" in key_status %}
-                                <span class="status-error">{{ key_status }}</span>
-                            {% elif "placeholder" in key_status %}
-                                <span class="status-error">{{ key_status }}</span>
+                            {% if "Not set" in openai_key_status %}
+                                <span class="status-error">{{ openai_key_status }}</span>
+                            {% elif "placeholder" in openai_key_status %}
+                                <span class="status-error">{{ openai_key_status }}</span>
                             {% else %}
-                                <span class="status-ok">{{ key_status }}</span>
+                                <span class="status-ok">{{ openai_key_status }}</span>
                             {% endif %}
                         </td>
                     </tr>
                     <tr>
                         <th scope="row">Client Initialization:</th>
                         <td>
-                            {% if client_status == "OK" %}
-                                <span class="status-ok">{{ client_status }}</span>
+                            {% if openai_client_status == "OK" %}
+                                <span class="status-ok">{{ openai_client_status }}</span>
                             {% else %}
-                                <span class="status-error">{{ client_status }}</span>
+                                <span class="status-error">{{ openai_client_status }}</span>
                             {% endif %}
                         </td>
                     </tr>
                     <tr>
                         <th scope="row">API Connection:</th>
                         <td>
-                            {% if api_working %}
+                            {% if openai_api_working %}
                                 <span class="status-ok">Working</span>
                             {% else %}
                                 <span class="status-error">Failed</span>
@@ -80,6 +80,57 @@
                     </tr>
                 </tbody>
             </table>
+        </div>
+
+        <div class="diagnostic-section">
+            <h3>Claude API Diagnostics</h3>
+            <table class="table">
+                <tbody>
+                    <tr>
+                        <th scope="row" style="width: 200px;">API Key Status:</th>
+                        <td>
+                            {% if "Not set" in claude_key_status %}
+                                <span class="status-error">{{ claude_key_status }}</span>
+                            {% elif "placeholder" in claude_key_status %}
+                                <span class="status-error">{{ claude_key_status }}</span>
+                            {% else %}
+                                <span class="status-ok">{{ claude_key_status }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Client Initialization:</th>
+                        <td>
+                            {% if claude_client_status == "OK" %}
+                                <span class="status-ok">{{ claude_client_status }}</span>
+                            {% else %}
+                                <span class="status-error">{{ claude_client_status }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">API Connection:</th>
+                        <td>
+                            {% if claude_api_working %}
+                                <span class="status-ok">Working</span>
+                            {% else %}
+                                <span class="status-error">Failed</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="diagnostic-section">
+            <h3>Currently Using:</h3>
+            <div class="alert alert-info">
+                {% if api_provider %}
+                    <strong>{{ api_provider }}</strong> for paper summarization
+                {% else %}
+                    <strong>Fallback summarization</strong> (no API client available)
+                {% endif %}
+            </div>
         </div>
 
         {% if error_message %}
@@ -92,11 +143,16 @@
         <div class="diagnostic-section">
             <h3>Troubleshooting Steps</h3>
             <ol class="list-group list-group-numbered mb-3">
-                <li class="list-group-item">Check that your OpenAI API key is set in the <code>.env</code> file</li>
+                <li class="list-group-item">Check that you have at least one API key set in the <code>.env</code> file</li>
                 <li class="list-group-item">Verify that the API key is valid and has not expired</li>
-                <li class="list-group-item">Ensure you have sufficient credit in your OpenAI account</li>
+                <li class="list-group-item">Ensure you have sufficient credit in your account</li>
                 <li class="list-group-item">Check your internet connection</li>
-                <li class="list-group-item">Verify OpenAI API service status at <a href="https://status.openai.com/" target="_blank">status.openai.com</a></li>
+                <li class="list-group-item">Verify API service status:
+                    <ul>
+                        <li><a href="https://status.openai.com/" target="_blank">OpenAI Status</a></li>
+                        <li><a href="https://status.anthropic.com/" target="_blank">Anthropic/Claude Status</a></li>
+                    </ul>
+                </li>
             </ol>
         </div>
 
@@ -107,5 +163,6 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </body>
 </html> 

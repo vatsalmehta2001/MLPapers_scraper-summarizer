@@ -1,102 +1,166 @@
 {% extends "base.html" %}
 
-{% block title %}Recent ML Papers | ML Papers Summarizer{% endblock %}
+{% block title %}ML Papers Summarizer | Home{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-md-12">
+<div class="row mb-4">
+    <div class="col-md-8">
         <h1 class="mb-4">Recent Machine Learning Papers</h1>
-        
-        {% if category %}
-        <div class="alert alert-info">
-            <i class="fas fa-filter me-2"></i> Filtering by category: <strong>{{ category }}</strong>
-            <a href="{{ url_for('index') }}" class="float-end">Clear Filter</a>
+    </div>
+    <div class="col-md-4 text-end">
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#fetchPapersModal">
+            <i class="fas fa-sync-alt"></i> Fetch New Papers
+        </button>
+        <a href="{{ url_for('search_papers') }}" class="btn btn-outline-primary ms-2">
+            <i class="fas fa-search"></i> Advanced Search
+        </a>
+    </div>
+</div>
+
+<!-- Search Bar -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <form action="{{ url_for('search_papers') }}" method="post">
+                    <div class="input-group">
+                        <input type="text" class="form-control" name="query" placeholder="Search for papers by topic, author, or keyword...">
+                        <button class="btn btn-primary" type="submit">
+                            <i class="fas fa-search"></i> Search
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
-        {% endif %}
-        
-        {% if papers %}
-            <div class="row row-cols-1 row-cols-md-2 g-4">
-                {% for paper in papers %}
-                <div class="col">
-                    <div class="card h-100 shadow-sm">
-                        <div class="card-header bg-primary bg-opacity-10">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <small class="text-muted">{{ paper.published_date.strftime('%Y-%m-%d') }}</small>
-                                <div>
-                                    {% for category in paper.categories_list %}
-                                    <a href="{{ url_for('index', category=category) }}" class="badge bg-secondary text-decoration-none">{{ category }}</a>
-                                    {% endfor %}
-                                </div>
-                            </div>
+    </div>
+</div>
+
+<!-- Modal for fetching papers -->
+<div class="modal fade" id="fetchPapersModal" tabindex="-1" aria-labelledby="fetchPapersModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="fetchPapersModalLabel">Fetch New Papers</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form action="{{ url_for('fetch_papers') }}" method="post">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="days" class="form-label">Days to look back</label>
+                            <input type="number" class="form-control" id="days" name="days" value="3" min="1" max="30">
+                            <div class="form-text">How many days of recent papers to fetch (1-30).</div>
                         </div>
-                        <div class="card-body">
-                            <h5 class="card-title">{{ paper.title }}</h5>
-                            <h6 class="card-subtitle mb-2 text-muted">
-                                {% for author in paper.authors_list[:3] %}
-                                <span>{{ author }}</span>{% if not loop.last %}, {% endif %}
-                                {% endfor %}
-                                {% if paper.authors_list|length > 3 %}
-                                <span>et al.</span>
-                                {% endif %}
-                            </h6>
-                            
-                            {% if paper.summary %}
-                            <div class="card-text mt-3">
-                                <div class="summary-content">
-                                    {{ paper.summary|safe|replace('\n', '<br>')|truncate(300) }}
-                                </div>
-                            </div>
-                            {% else %}
-                            <p class="card-text text-muted mt-3">
-                                <em>No summary available yet. You can see the abstract on the detail page.</em>
-                                <div class="mt-2">
-                                    <strong>Abstract excerpt:</strong> {{ paper.abstract|truncate(150) }}
-                                </div>
-                            </p>
-                            {% endif %}
-                        </div>
-                        <div class="card-footer bg-transparent">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <a href="{{ paper.pdf_url }}" target="_blank" class="btn btn-sm btn-outline-primary me-1">
-                                        <i class="fas fa-file-pdf"></i> PDF
-                                    </a>
-                                    <a href="{{ paper.arxiv_url }}" target="_blank" class="btn btn-sm btn-outline-secondary">
-                                        <i class="fas fa-external-link-alt"></i> arXiv
-                                    </a>
-                                </div>
-                                <a href="{{ url_for('paper_detail', arxiv_id=paper.arxiv_id) }}" class="btn btn-sm btn-primary">
-                                    Read More <i class="fas fa-arrow-right ms-1"></i>
-                                </a>
-                            </div>
+                        <div class="col-md-6">
+                            <label for="max_results" class="form-label">Maximum papers</label>
+                            <input type="number" class="form-control" id="max_results" name="max_results" value="5" min="1" max="30">
+                            <div class="form-text">Maximum number of papers to fetch (1-30).</div>
                         </div>
                     </div>
+                    <div class="mb-3">
+                        <label for="categories" class="form-label">Categories</label>
+                        <input type="text" class="form-control" id="categories" name="categories" value="cs.AI,cs.LG,cs.CL" placeholder="e.g., cs.AI,cs.LG,cs.CL">
+                        <div class="form-text">Comma-separated list of arXiv categories.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="keywords" class="form-label">Keywords (optional)</label>
+                        <input type="text" class="form-control" id="keywords" name="keywords" placeholder="e.g., transformer,deep learning,neural">
+                        <div class="form-text">Comma-separated keywords to filter papers. Leave empty to include all papers.</div>
+                    </div>
+                    <div class="alert alert-info">
+                        <small>
+                            <i class="fas fa-info-circle"></i> This process may take several minutes depending on the number of papers.
+                            Papers will be fetched from arXiv and summaries will be generated using AI.
+                        </small>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-sync-alt"></i> Fetch Papers
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        {% if category %}
+        <div class="alert alert-info mb-4">
+            <h5 class="alert-heading">Category Filter: {{ category }}</h5>
+            <p class="mb-0">Showing papers in category <strong>{{ category }}</strong>. <a href="{{ url_for('index') }}" class="alert-link">Clear filter</a></p>
+        </div>
+        {% endif %}
+
+        {% if search %}
+        <div class="alert alert-info mb-4">
+            <h5 class="alert-heading">Search Results: "{{ search }}"</h5>
+            <p class="mb-0">Showing papers matching <strong>{{ search }}</strong>. <a href="{{ url_for('index') }}" class="alert-link">Clear search</a></p>
+        </div>
+        {% endif %}
+
+        {% if scraping_in_progress %}
+        <div class="alert alert-warning mb-4 fetching-animation">
+            <h5 class="alert-heading">Fetching Papers...</h5>
+            <p>Please wait while we fetch and summarize the latest papers. This process may take a few minutes.</p>
+            <div class="progress">
+                <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 100%"></div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if papers %}
+        {% for paper in papers %}
+        <div class="card mb-4 shadow-sm">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        {% for category in paper.categories_list %}
+                        <a href="{{ url_for('index', category=category) }}" class="badge bg-secondary me-1 text-decoration-none">{{ category }}</a>
+                        {% endfor %}
+                    </div>
+                    <small class="text-muted">{{ paper.published_date.strftime('%Y-%m-%d') }}</small>
                 </div>
-                {% endfor %}
             </div>
-            
-            {% if papers|length >= limit %}
-            <div class="d-flex justify-content-center mt-4">
-                <nav aria-label="Page navigation">
-                    <ul class="pagination">
-                        {% if page > 1 %}
-                        <li class="page-item">
-                            <a class="page-link" href="{{ url_for('index', page=page-1, limit=limit, category=category) }}">Previous</a>
-                        </li>
-                        {% endif %}
-                        <li class="page-item">
-                            <a class="page-link" href="{{ url_for('index', page=page+1, limit=limit, category=category) }}">Next</a>
-                        </li>
-                    </ul>
-                </nav>
+            <div class="card-body">
+                <h3 class="card-title">
+                    <a href="{{ url_for('paper_detail', arxiv_id=paper.arxiv_id) }}" class="text-decoration-none">{{ paper.title }}</a>
+                </h3>
+                <h6 class="card-subtitle mb-3 text-muted">
+                    {% for author in paper.authors_list %}
+                    {{ author }}{% if not loop.last %}, {% endif %}
+                    {% endfor %}
+                </h6>
+                <p class="card-text abstract">{{ paper.abstract[:300] }}{% if paper.abstract|length > 300 %}...{% endif %}</p>
+                {% if paper.summary %}
+                <hr>
+                <div class="card-text summary">
+                    <strong>Layman Summary:</strong>
+                    <div>{{ paper.summary.split('\n\n', 1)[1][:200] if '\n\n' in paper.summary else paper.summary[:200] }}{% if paper.summary|length > 200 %}...{% endif %}</div>
+                </div>
+                {% endif %}
             </div>
-            {% endif %}
-            
+            <div class="card-footer">
+                <div class="d-flex justify-content-between">
+                    <a href="{{ url_for('paper_detail', arxiv_id=paper.arxiv_id) }}" class="btn btn-primary">Read More</a>
+                    <div>
+                        <a href="{{ paper.pdf_url }}" target="_blank" class="btn btn-outline-primary me-2">
+                            <i class="fas fa-file-pdf"></i> PDF
+                        </a>
+                        <a href="{{ paper.arxiv_url }}" target="_blank" class="btn btn-outline-secondary">
+                            <i class="fas fa-external-link-alt"></i> arXiv
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
         {% else %}
-            <div class="alert alert-info">
-                <h4 class="alert-heading">No papers found!</h4>
-                <p>There are no papers in the database yet. Use the "Fetch New Papers" button to retrieve the latest ML research papers.</p>
-            </div>
+        <div class="alert alert-info">
+            <h5 class="alert-heading">No papers found</h5>
+            <p>No papers matching your criteria were found. Try changing your search or fetching new papers.</p>
+        </div>
         {% endif %}
     </div>
 </div>

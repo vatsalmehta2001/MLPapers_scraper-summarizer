@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block title %}Search Papers | ML Papers Summarizer{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <h1 class="mb-4">Search Machine Learning Papers</h1>
+        
+        <div class="card mb-4">
+            <div class="card-body">
+                <form action="{{ url_for('search_papers') }}" method="post" class="mb-0">
+                    <div class="input-group">
+                        <input type="text" class="form-control" name="query" placeholder="Search for papers by title, authors, keywords..." value="{{ search_query }}" required>
+                        <button class="btn btn-primary" type="submit">
+                            <i class="fas fa-search"></i> Search
+                        </button>
+                    </div>
+                    <small class="form-text text-muted mt-2">
+                        Tips: Use specific ML terms like "transformer", "reinforcement learning", or "computer vision". 
+                        Search for authors with quotes like "Hinton".
+                    </small>
+                </form>
+            </div>
+        </div>
+        
+        {% if search_query %}
+            <div class="mb-4">
+                {% if papers %}
+                    <h2>Search Results for "{{ search_query }}"</h2>
+                    <p class="text-muted">Found {{ papers|length }} papers</p>
+                {% else %}
+                    <div class="alert alert-info">
+                        <h5>No results found for "{{ search_query }}"</h5>
+                        <p>Try broadening your search or using different keywords.</p>
+                    </div>
+                {% endif %}
+            </div>
+        {% endif %}
+        
+        {% if papers %}
+            <div class="row">
+                {% for paper in papers %}
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <div>
+                                {% for category in paper.categories %}
+                                <span class="badge bg-secondary me-1">{{ category }}</span>
+                                {% endfor %}
+                            </div>
+                            <small class="text-muted">{{ paper.published }}</small>
+                        </div>
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <a href="{{ url_for('paper_detail', arxiv_id=paper.id) }}" class="text-decoration-none">{{ paper.title }}</a>
+                            </h5>
+                            <div class="card-text mb-2">
+                                <small class="text-muted">
+                                    {% for author in paper.authors %}
+                                    {{ author }}{% if not loop.last %}, {% endif %}
+                                    {% endfor %}
+                                </small>
+                            </div>
+                            <p class="card-text">{{ paper.abstract[:200] }}{% if paper.abstract|length > 200 %}...{% endif %}</p>
+                        </div>
+                        <div class="card-footer bg-transparent">
+                            <div class="d-flex justify-content-between">
+                                <a href="{{ url_for('paper_detail', arxiv_id=paper.id) }}" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-book-open"></i> View Details
+                                </a>
+                                <div>
+                                    <a href="{{ paper.pdf_url }}" target="_blank" class="btn btn-sm btn-outline-secondary me-1">
+                                        <i class="fas fa-file-pdf"></i> PDF
+                                    </a>
+                                    <a href="{{ paper.arxiv_url }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                                        <i class="fas fa-external-link-alt"></i> arXiv
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% elif not search_query %}
+            <div class="card shadow-sm">
+                <div class="card-body text-center p-5">
+                    <h3 class="mb-4">Find the latest Machine Learning research</h3>
+                    <p class="mb-4">Search for specific topics, techniques, or authors to discover relevant papers.</p>
+                    <p>Example searches:</p>
+                    <div class="d-flex justify-content-center flex-wrap gap-2 mb-3">
+                        <a href="{{ url_for('search_papers', query='transformer attention') }}" class="btn btn-outline-primary m-1">transformer attention</a>
+                        <a href="{{ url_for('search_papers', query='reinforcement learning') }}" class="btn btn-outline-primary m-1">reinforcement learning</a>
+                        <a href="{{ url_for('search_papers', query='computer vision') }}" class="btn btn-outline-primary m-1">computer vision</a>
+                        <a href="{{ url_for('search_papers', query='natural language processing') }}" class="btn btn-outline-primary m-1">natural language processing</a>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %} 

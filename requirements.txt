@@ -1,11 +1,21 @@
-arxiv
-requests
-beautifulsoup4
-transformers
-torch
-flask
-python-dotenv
-newspaper3k
-openai
-sqlalchemy
+# Core web application
+flask>=2.2.3
+sqlalchemy>=2.0.0
+python-dotenv>=1.0.0
+
+# API clients
+openai>=1.0.0
+anthropic>=0.7.0
+
+# Scraping and processing
+arxiv>=1.4.3
+requests>=2.28.2
+beautifulsoup4>=4.11.2
+newspaper3k>=0.2.8
+
+# Optional dependencies for local fallback summarization
+# These are large packages and can be commented out if not using fallback
+# transformers>=4.28.0
+# torch>=2.0.0
+
 schedule 

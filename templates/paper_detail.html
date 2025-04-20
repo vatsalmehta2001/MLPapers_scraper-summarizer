@@ -12,6 +12,17 @@
             </ol>
         </nav>
         
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+        
         <div class="card shadow">
             <div class="card-header bg-primary text-white">
                 <div class="d-flex justify-content-between">
@@ -67,18 +78,33 @@
                 <div class="row">
                     <div class="col-md-12">
                         <div class="card mb-4">
-                            <div class="card-header bg-light">
+                            <div class="card-header bg-light d-flex justify-content-between align-items-center">
                                 <h5 class="mb-0">Layman Summary</h5>
+                                {% if paper.summary %}
+                                <form action="{{ url_for('generate_summary', arxiv_id=paper.arxiv_id) }}" method="post" class="d-inline">
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary">
+                                        <i class="fas fa-sync-alt"></i> Regenerate
+                                    </button>
+                                </form>
+                                {% endif %}
                             </div>
                             <div class="card-body">
                                 {% if paper.summary %}
                                 <div class="summary">
-                                    {{ paper.summary|safe|replace('\n', '<br>') }}
+                                    <div class="summary-timestamp">Generated on {{ paper.updated_date.strftime('%Y-%m-%d %H:%M') }} using Claude API</div>
+                                    <div class="technical-summary">
+                                        {{ paper.summary.split('\n\n', 1)[1]|replace('**SUMMARY**:', '<h4>SUMMARY</h4>')|replace('**TECHNICAL CONTRIBUTIONS**:', '<h4>TECHNICAL CONTRIBUTIONS</h4>')|replace('**METHODOLOGY**:', '<h4>METHODOLOGY</h4>')|replace('**RESULTS & EVALUATION**:', '<h4>RESULTS & EVALUATION</h4>')|replace('**SIGNIFICANCE & APPLICATIONS**:', '<h4>SIGNIFICANCE & APPLICATIONS</h4>')|safe }}
+                                    </div>
                                 </div>
                                 {% else %}
                                 <p class="text-muted">
-                                    <em>No summary available for this paper yet.</em>
+                                    <em>No summary available for this paper.</em>
                                 </p>
+                                <form action="{{ url_for('generate_summary', arxiv_id=paper.arxiv_id) }}" method="post">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-magic"></i> Generate Summary Now
+                                    </button>
+                                </form>
                                 {% endif %}
                             </div>
                         </div>
@@ -93,7 +119,7 @@
                             </div>
                             <div class="card-body">
                                 <div class="abstract">
-                                    {{ paper.abstract|safe|replace('\n', '<br>') }}
+                                    <p style="text-align: justify; line-height: 1.6; margin-bottom: 0;">{{ paper.abstract }}</p>
                                 </div>
                             </div>
                         </div>
