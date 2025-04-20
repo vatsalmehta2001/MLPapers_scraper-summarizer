@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}Admin | ML Papers Summarizer{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h1 class="mb-4">Admin Panel</h1>
+        
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Fetch Papers</h5>
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('fetch_papers') }}" method="post">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="days" class="form-label">Days to look back</label>
+                                <input type="number" class="form-control" id="days" name="days" value="3" min="1" max="30">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="max_results" class="form-label">Maximum papers to fetch</label>
+                                <input type="number" class="form-control" id="max_results" name="max_results" value="5" min="1" max="50">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="categories" class="form-label">Categories (comma separated)</label>
+                                <input type="text" class="form-control" id="categories" name="categories" value="cs.AI,cs.LG,cs.CL" placeholder="e.g. cs.AI,cs.LG">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="alert alert-info">
+                        <small>This process may take a while depending on the number of papers to fetch and summarize.</small>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-sync-alt"></i> Fetch Papers
+                    </button>
+                </form>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Papers Without Summaries</h5>
+            </div>
+            <div class="card-body">
+                {% if papers_without_summaries %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Title</th>
+                                <th>Published</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for paper in papers_without_summaries %}
+                            <tr>
+                                <td>
+                                    <a href="{{ url_for('paper_detail', arxiv_id=paper.arxiv_id) }}">{{ paper.title }}</a>
+                                </td>
+                                <td>{{ paper.published_date.strftime('%Y-%m-%d') }}</td>
+                                <td>
+                                    <form action="{{ url_for('summarize_paper', arxiv_id=paper.arxiv_id) }}" method="post" class="d-inline">
+                                        <button type="submit" class="btn btn-sm btn-primary">
+                                            <i class="fas fa-magic"></i> Generate Summary
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-success">
+                    <p>All papers have summaries. Good job!</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

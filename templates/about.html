@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}About | ML Papers Summarizer{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">About ML Papers Summarizer</h4>
+            </div>
+            <div class="card-body">
+                <h5 class="card-title">Making ML Research Accessible</h5>
+                
+                <p class="card-text">
+                    ML Papers Summarizer is a tool that automatically scrapes recent machine learning research papers from arXiv
+                    and generates easy-to-understand summaries for a general audience.
+                </p>
+                
+                <h5 class="mt-4">How It Works</h5>
+                <ol>
+                    <li><strong>Paper Collection:</strong> The tool regularly fetches the latest papers from arXiv in machine learning categories.</li>
+                    <li><strong>Analysis:</strong> Each paper's title and abstract are processed.</li>
+                    <li><strong>Summarization:</strong> Using advanced NLP models, the tool creates a concise, layman-friendly summary.</li>
+                    <li><strong>Presentation:</strong> Summaries are organized and presented in an easy-to-browse format.</li>
+                </ol>
+                
+                <h5 class="mt-4">Features</h5>
+                <ul>
+                    <li>Browse the latest ML research papers</li>
+                    <li>Read simplified summaries without deep technical knowledge</li>
+                    <li>Filter papers by category</li>
+                    <li>Access original papers directly on arXiv</li>
+                    <li>Stay updated on cutting-edge ML research</li>
+                </ul>
+                
+                <h5 class="mt-4">Categories</h5>
+                <p>We currently cover these arXiv categories:</p>
+                <div class="row">
+                    <div class="col-md-6">
+                        <ul>
+                            <li><strong>cs.AI</strong> - Artificial Intelligence</li>
+                            <li><strong>cs.LG</strong> - Machine Learning</li>
+                            <li><strong>cs.CL</strong> - Computation and Language</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <ul>
+                            <li><strong>cs.CV</strong> - Computer Vision</li>
+                            <li><strong>cs.NE</strong> - Neural and Evolutionary Computing</li>
+                            <li><strong>stat.ML</strong> - Statistics - Machine Learning</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer">
+                <p class="mb-0 text-center">
+                    <small class="text-muted">This project was built to make ML research more accessible to everyone.</small>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

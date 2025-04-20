@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block title %}{{ paper.title }} | ML Papers Summarizer{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li>
+                <li class="breadcrumb-item active">Paper Details</li>
+            </ol>
+        </nav>
+        
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h5 class="mb-0">Paper Details</h5>
+                    </div>
+                    <div>
+                        <a href="{{ paper.pdf_url }}" target="_blank" class="btn btn-sm btn-light me-1">
+                            <i class="fas fa-file-pdf"></i> PDF
+                        </a>
+                        <a href="{{ paper.arxiv_url }}" target="_blank" class="btn btn-sm btn-light">
+                            <i class="fas fa-external-link-alt"></i> arXiv
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card-body">
+                <h2 class="card-title">{{ paper.title }}</h2>
+                
+                <div class="authors mb-3">
+                    <strong>Authors:</strong> 
+                    {% for author in paper.authors_list %}
+                    <span>{{ author }}</span>{% if not loop.last %}, {% endif %}
+                    {% endfor %}
+                </div>
+                
+                <div class="paper-metadata mb-4">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <small class="text-muted">
+                                <i class="far fa-calendar-alt"></i> Published: {{ paper.published_date.strftime('%Y-%m-%d') }}
+                            </small>
+                        </div>
+                        {% if paper.updated_date %}
+                        <div class="col-md-4">
+                            <small class="text-muted">
+                                <i class="fas fa-sync-alt"></i> Updated: {{ paper.updated_date.strftime('%Y-%m-%d') }}
+                            </small>
+                        </div>
+                        {% endif %}
+                        <div class="col-md-4">
+                            <small class="text-muted">
+                                <i class="fas fa-tag"></i> Categories: 
+                                {% for category in paper.categories_list %}
+                                <a href="{{ url_for('index', category=category) }}" class="badge bg-secondary text-decoration-none">{{ category }}</a>
+                                {% endfor %}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="card mb-4">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0">Layman Summary</h5>
+                            </div>
+                            <div class="card-body">
+                                {% if paper.summary %}
+                                <div class="summary">
+                                    {{ paper.summary|safe|replace('\n', '<br>') }}
+                                </div>
+                                {% else %}
+                                <p class="text-muted">
+                                    <em>No summary available for this paper yet.</em>
+                                </p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="card">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0">Abstract</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="abstract">
+                                    {{ paper.abstract|safe|replace('\n', '<br>') }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                {% if paper.doi or paper.journal_ref %}
+                <div class="additional-info mt-4">
+                    <h5>Additional Information</h5>
+                    <ul class="list-group">
+                        {% if paper.doi %}
+                        <li class="list-group-item">
+                            <strong>DOI:</strong> <a href="https://doi.org/{{ paper.doi }}" target="_blank">{{ paper.doi }}</a>
+                        </li>
+                        {% endif %}
+                        
+                        {% if paper.journal_ref %}
+                        <li class="list-group-item">
+                            <strong>Journal Reference:</strong> {{ paper.journal_ref }}
+                        </li>
+                        {% endif %}
+                    </ul>
+                </div>
+                {% endif %}
+            </div>
+            
+            <div class="card-footer">
+                <div class="d-flex justify-content-between">
+                    <a href="{{ url_for('index') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to List
+                    </a>
+                    <div>
+                        <a href="{{ paper.pdf_url }}" target="_blank" class="btn btn-primary">
+                            <i class="fas fa-file-pdf"></i> Download PDF
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

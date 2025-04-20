@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block title %}Recent ML Papers | ML Papers Summarizer{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h1 class="mb-4">Recent Machine Learning Papers</h1>
+        
+        {% if category %}
+        <div class="alert alert-info">
+            <i class="fas fa-filter me-2"></i> Filtering by category: <strong>{{ category }}</strong>
+            <a href="{{ url_for('index') }}" class="float-end">Clear Filter</a>
+        </div>
+        {% endif %}
+        
+        {% if papers %}
+            <div class="row row-cols-1 row-cols-md-2 g-4">
+                {% for paper in papers %}
+                <div class="col">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-header bg-primary bg-opacity-10">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">{{ paper.published_date.strftime('%Y-%m-%d') }}</small>
+                                <div>
+                                    {% for category in paper.categories_list %}
+                                    <a href="{{ url_for('index', category=category) }}" class="badge bg-secondary text-decoration-none">{{ category }}</a>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <h5 class="card-title">{{ paper.title }}</h5>
+                            <h6 class="card-subtitle mb-2 text-muted">
+                                {% for author in paper.authors_list[:3] %}
+                                <span>{{ author }}</span>{% if not loop.last %}, {% endif %}
+                                {% endfor %}
+                                {% if paper.authors_list|length > 3 %}
+                                <span>et al.</span>
+                                {% endif %}
+                            </h6>
+                            
+                            {% if paper.summary %}
+                            <div class="card-text mt-3">
+                                <div class="summary-content">
+                                    {{ paper.summary|safe|replace('\n', '<br>')|truncate(300) }}
+                                </div>
+                            </div>
+                            {% else %}
+                            <p class="card-text text-muted mt-3">
+                                <em>No summary available yet. You can see the abstract on the detail page.</em>
+                                <div class="mt-2">
+                                    <strong>Abstract excerpt:</strong> {{ paper.abstract|truncate(150) }}
+                                </div>
+                            </p>
+                            {% endif %}
+                        </div>
+                        <div class="card-footer bg-transparent">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <a href="{{ paper.pdf_url }}" target="_blank" class="btn btn-sm btn-outline-primary me-1">
+                                        <i class="fas fa-file-pdf"></i> PDF
+                                    </a>
+                                    <a href="{{ paper.arxiv_url }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                                        <i class="fas fa-external-link-alt"></i> arXiv
+                                    </a>
+                                </div>
+                                <a href="{{ url_for('paper_detail', arxiv_id=paper.arxiv_id) }}" class="btn btn-sm btn-primary">
+                                    Read More <i class="fas fa-arrow-right ms-1"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            {% if papers|length >= limit %}
+            <div class="d-flex justify-content-center mt-4">
+                <nav aria-label="Page navigation">
+                    <ul class="pagination">
+                        {% if page > 1 %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('index', page=page-1, limit=limit, category=category) }}">Previous</a>
+                        </li>
+                        {% endif %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('index', page=page+1, limit=limit, category=category) }}">Next</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+            
+        {% else %}
+            <div class="alert alert-info">
+                <h4 class="alert-heading">No papers found!</h4>
+                <p>There are no papers in the database yet. Use the "Fetch New Papers" button to retrieve the latest ML research papers.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %} 

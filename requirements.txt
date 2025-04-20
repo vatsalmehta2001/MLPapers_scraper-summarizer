@@ -1,0 +1,11 @@
+arxiv
+requests
+beautifulsoup4
+transformers
+torch
+flask
+python-dotenv
+newspaper3k
+openai
+sqlalchemy
+schedule 

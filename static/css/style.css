@@ -1,0 +1,92 @@
+/* Main Styles for ML Papers Summarizer */
+
+body {
+    background-color: #f8f9fa;
+    color: #333;
+}
+
+/* Card styles */
+.card {
+    transition: transform 0.3s ease;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+.card-title {
+    color: #0d6efd;
+}
+
+.summary-content {
+    line-height: 1.6;
+}
+
+/* Badge styles */
+.badge {
+    font-weight: 400;
+    border-radius: 4px;
+    padding: 5px 8px;
+    margin-right: 3px;
+}
+
+/* Navbar and footer */
+.navbar {
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+footer {
+    border-top: 1px solid #e9ecef;
+}
+
+/* Paper details */
+.abstract, .summary {
+    line-height: 1.8;
+    font-size: 1.1rem;
+}
+
+.paper-metadata {
+    border-bottom: 1px solid #e9ecef;
+    padding-bottom: 15px;
+    margin-bottom: 20px;
+}
+
+/* Category cards */
+.category-card {
+    text-align: center;
+    background: linear-gradient(to bottom right, #f8f9fa, #e9ecef);
+}
+
+/* Custom buttons */
+.btn-outline-primary, .btn-outline-secondary {
+    border-width: 2px;
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 767.98px) {
+    h1 {
+        font-size: 1.8rem;
+    }
+    
+    .card-title {
+        font-size: 1.2rem;
+    }
+    
+    .abstract, .summary {
+        font-size: 1rem;
+    }
+}
+
+/* Animation for fetching papers */
+@keyframes pulsate {
+    0% { opacity: 0.6; }
+    50% { opacity: 1; }
+    100% { opacity: 0.6; }
+}
+
+.fetching-animation {
+    animation: pulsate 1.5s infinite;
+} 
