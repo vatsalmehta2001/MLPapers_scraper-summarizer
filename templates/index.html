@@ -137,7 +137,11 @@
                 <hr>
                 <div class="card-text summary">
                     <strong>Layman Summary:</strong>
-                    <div>{{ paper.summary.split('\n\n', 1)[1][:200] if '\n\n' in paper.summary else paper.summary[:200] }}{% if paper.summary|length > 200 %}...{% endif %}</div>
+                    <div>{{ paper.summary | truncate(200) }}</div>
+                </div>
+                {% else %}
+                <div class="summary">
+                    <em>No summary available yet. <a href="{{ url_for('paper_detail', arxiv_id=paper.arxiv_id) }}">View paper details</a> to generate one.</em>
                 </div>
                 {% endif %}
             </div>

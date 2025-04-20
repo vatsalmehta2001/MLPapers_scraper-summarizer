@@ -107,8 +107,8 @@
                                     <em>No summary available for this paper.</em>
                                 </p>
                                 <form action="{{ url_for('generate_summary', arxiv_id=paper.arxiv_id) }}" method="post">
-                                    <button type="submit" class="btn btn-primary">
-                                        <i class="fas fa-magic"></i> Generate Summary Now
+                                    <button type="submit" class="btn btn-success">
+                                        <i class="fas fa-magic"></i> Generate Summary
                                     </button>
                                 </form>
                                 {% endif %}
