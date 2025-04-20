@@ -44,32 +44,33 @@ class PaperSummarizer:
         self.claude_client = None
         self.api_provider = "None"  # Default if no API is available
         
-        # Initialize OpenAI client if API key is available
-        openai_api_key = os.getenv("OPENAI_API_KEY")
-        if OPENAI_AVAILABLE and openai_api_key and openai_api_key != "sk-your-openai-key-goes-here":
-            try:
-                self.openai_client = OpenAI(api_key=openai_api_key)
-                logger.info("OpenAI client initialized successfully")
-                if force_provider != "Claude":  # Use OpenAI unless forcing Claude
-                    self.api_provider = "OpenAI"
-            except Exception as e:
-                logger.error(f"Error initializing OpenAI client: {e}")
-        else:
-            logger.warning("OpenAI API not available (missing key or package)")
-        
-        # Initialize Claude client if API key is available
+        # Initialize Claude client if API key is available (prioritize Claude)
         claude_api_key = os.getenv("ANTHROPIC_API_KEY")
         if ANTHROPIC_AVAILABLE and claude_api_key and claude_api_key != "sk-ant-your-key-goes-here":
             try:
                 self.claude_client = Anthropic(api_key=claude_api_key)
                 logger.info("Claude client initialized successfully")
-                # Use Claude if OpenAI not set yet or if Claude is forced
-                if self.api_provider == "None" or force_provider == "Claude":
+                # Use Claude by default or if Claude is forced
+                if force_provider != "OpenAI":
                     self.api_provider = "Claude"
             except Exception as e:
                 logger.error(f"Error initializing Claude client: {e}")
         else:
             logger.warning("Claude API not available (missing key or package)")
+        
+        # Initialize OpenAI client if API key is available and Claude didn't initialize or OpenAI is forced
+        openai_api_key = os.getenv("OPENAI_API_KEY")
+        if OPENAI_AVAILABLE and openai_api_key and openai_api_key != "sk-your-openai-key-goes-here":
+            try:
+                self.openai_client = OpenAI(api_key=openai_api_key)
+                logger.info("OpenAI client initialized successfully")
+                # Only use OpenAI if Claude not available or OpenAI is forced
+                if (self.api_provider == "None" or force_provider == "OpenAI"):
+                    self.api_provider = "OpenAI"
+            except Exception as e:
+                logger.error(f"Error initializing OpenAI client: {e}")
+        else:
+            logger.warning("OpenAI API not available (missing key or package)")
         
         # Handle forcing a provider that's not available
         if force_provider == "OpenAI" and not self.openai_client:
