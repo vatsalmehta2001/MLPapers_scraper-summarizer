@@ -2,9 +2,21 @@
 
 A web application that scrapes recent Machine Learning research papers from arXiv and generates summaries using either OpenAI or Claude API. This project demonstrates how to implement a resilient AI-powered system that can seamlessly switch between different language model providers.
 
+## Project Motivation
+
+I created this project to address a personal pain point. As I started building ML projects both for university assignments and personal skill improvement, I found myself spending excessive time searching through research papers to find useful techniques and stay current with the industry. 
+
+This tool automates the most time-consuming parts:
+1. Discovering new papers in specific ML categories
+2. Reading and understanding technical papers quickly
+3. Extracting the key contributions and methodologies
+
+By scraping papers from arXiv and leveraging AI to generate comprehensive summaries directly from the full PDF content, this project has significantly cut down the labor involved in staying up-to-date with ML research.
+
 ## Key Features
 
 - **Dual API Support**: Integration with both OpenAI and Claude APIs, with fallback options if one service is unavailable
+- **Full PDF Analysis**: Extracts text directly from research paper PDFs to generate more comprehensive and accurate summaries
 - **Automated Scraping**: Retrieves recent ML research papers from arXiv based on categories and keywords
 - **AI Summarization**: Generates concise, structured summaries of complex research papers
 - **Provider Selection**: Choose which AI model to use for summarization through an intuitive admin interface
@@ -19,7 +31,7 @@ View recently scraped papers from arXiv with their summaries, categorized for ea
 ![Home Page](screenshots/home_page.png)
 
 ### Paper Detail
-Read detailed information about a paper along with an AI-generated summary that breaks down complex research into digestible sections.
+Read detailed information about a paper along with an AI-generated summary that breaks down complex research into digestible sections. Summaries are now generated using the full paper PDF, not just the abstract.
 ![Paper Detail](screenshots/paper_detail.png)
 
 ### Admin Panel
@@ -80,9 +92,20 @@ The application supports two AI providers for generating summaries:
 
 You can provide either one or both API keys. The application is designed to work with just one of the services if needed.
 
+## Enhanced Summary Generation
+
+The latest version now extracts text directly from paper PDFs to generate significantly more comprehensive summaries:
+
+1. **PDF Download**: Automatically downloads the PDF from arXiv
+2. **Text Extraction**: Processes and extracts the content from the research paper
+3. **Deep Analysis**: AI models analyze the full paper content, not just the abstract
+4. **Structured Output**: Generates well-formatted summaries with detailed technical content
+
+This produces summaries that capture implementation details, experimental results, and nuances that aren't available in the abstract alone.
+
 ## Switching Between API Providers
 
-In the Admin Panel, you can select which API provider to use for summarization:
+In the Admin Panel, you can select which AI provider to use for summarization:
 
 1. **Auto**: The application will automatically use available APIs, with Claude preferred if both are available
 2. **OpenAI**: Force using OpenAI's GPT model even if Claude is available

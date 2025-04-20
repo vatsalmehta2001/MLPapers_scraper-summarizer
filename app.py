@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 from flask import Flask, request, render_template, redirect, url_for, flash, jsonify
 from dotenv import load_dotenv
 from sqlalchemy import text
+import markdown
 
 # Import our modules
 from database import DatabaseManager
@@ -33,11 +34,16 @@ load_dotenv()
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "dev_key_change_in_production")
 
+# Add markdown filter to convert markdown to HTML
+@app.template_filter('markdown')
+def convert_markdown(text):
+    return markdown.markdown(text, extensions=['tables', 'fenced_code', 'codehilite'])
+
 # Initialize database manager
 db = DatabaseManager()
 
-# Initialize summarizer
-paper_summarizer = PaperSummarizer()
+# Initialize summarizer with PDF extraction enabled
+paper_summarizer = PaperSummarizer(pdf_extraction=True)
 
 # Initialize default scraper
 arxiv_scraper = ArxivScraper(max_results=int(os.getenv("MAX_PAPERS", "10")))
@@ -293,13 +299,13 @@ def set_api_provider():
         
         if api_provider == 'OpenAI':
             # Force using OpenAI
-            paper_summarizer = PaperSummarizer(force_provider='OpenAI')
+            paper_summarizer = PaperSummarizer(force_provider='OpenAI', pdf_extraction=True)
         elif api_provider == 'Claude':
             # Force using Claude
-            paper_summarizer = PaperSummarizer(force_provider='Claude')
+            paper_summarizer = PaperSummarizer(force_provider='Claude', pdf_extraction=True)
         else:
             # Auto (use available API)
-            paper_summarizer = PaperSummarizer()
+            paper_summarizer = PaperSummarizer(pdf_extraction=True)
         
         logger.info(f"API provider changed to: {paper_summarizer.api_provider}")
         flash(f'Successfully set API provider to {paper_summarizer.api_provider}', 'success')
@@ -317,13 +323,17 @@ def generate_summary(arxiv_id):
         return jsonify({'success': False, 'message': 'Paper not found'})
     
     try:
+        # Start timing for performance tracking
+        start_time = time.time()
+        
         # Convert SQLAlchemy model to dict for the summarizer
         paper_dict = {
             'id': paper.arxiv_id,
             'title': paper.title,
             'abstract': paper.abstract,
             'authors': paper.authors_list,
-            'categories': paper.categories_list
+            'categories': paper.categories_list,
+            'pdf_url': paper.pdf_url
         }
         
         logger.info(f"Starting summary generation for paper: {paper.title}")
@@ -333,9 +343,13 @@ def generate_summary(arxiv_id):
         # Generate summary
         summary = paper_summarizer.summarize_paper(paper_dict)
         
-        # Add a timestamp to make it clear this is a new summary
+        # Calculate processing time
+        processing_time = time.time() - start_time
+        
+        # Add a timestamp and processing info to make it clear this is a new summary
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
-        summary = f"Generated on {timestamp} using {paper_summarizer.api_provider} API\n\n{summary}"
+        pdf_note = "with full PDF text analysis" if paper_summarizer.pdf_extraction else "from abstract only"
+        summary = f"Generated on {timestamp} using {paper_summarizer.api_provider} API {pdf_note} (processed in {processing_time:.1f}s)\n\n{summary}"
         
         # Update paper with new summary
         db.update_summary(arxiv_id, summary)

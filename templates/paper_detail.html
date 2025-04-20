@@ -91,10 +91,16 @@
                             <div class="card-body">
                                 {% if paper.summary %}
                                 <div class="summary">
-                                    <div class="summary-timestamp">Generated on {{ paper.updated_date.strftime('%Y-%m-%d %H:%M') }} using Claude API</div>
-                                    <div class="technical-summary">
-                                        {{ paper.summary.split('\n\n', 1)[1]|replace('**SUMMARY**:', '<h4>SUMMARY</h4>')|replace('**TECHNICAL CONTRIBUTIONS**:', '<h4>TECHNICAL CONTRIBUTIONS</h4>')|replace('**METHODOLOGY**:', '<h4>METHODOLOGY</h4>')|replace('**RESULTS & EVALUATION**:', '<h4>RESULTS & EVALUATION</h4>')|replace('**SIGNIFICANCE & APPLICATIONS**:', '<h4>SIGNIFICANCE & APPLICATIONS</h4>')|safe }}
+                                    {% if '\n\n' in paper.summary %}
+                                    <div class="summary-timestamp mb-3">{{ paper.summary.split('\n\n', 1)[0] }}</div>
+                                    <div class="technical-summary markdown-body">
+                                        {{ paper.summary.split('\n\n', 1)[1]|markdown|safe }}
                                     </div>
+                                    {% else %}
+                                    <div class="technical-summary markdown-body">
+                                        {{ paper.summary|markdown|safe }}
+                                    </div>
+                                    {% endif %}
                                 </div>
                                 {% else %}
                                 <p class="text-muted">

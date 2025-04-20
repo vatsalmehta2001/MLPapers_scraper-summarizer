@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 from typing import Optional, Dict, Any, List
 import random
 from datetime import datetime
+import tempfile
 
 # Import for OpenAI
 try:
@@ -24,6 +25,14 @@ try:
 except ImportError:
     ANTHROPIC_AVAILABLE = False
 
+# Import for PDF extraction
+try:
+    import PyPDF2
+    import pdfplumber
+    PDF_EXTRACTION_AVAILABLE = True
+except ImportError:
+    PDF_EXTRACTION_AVAILABLE = False
+
 load_dotenv()
 
 logging.basicConfig(
@@ -37,12 +46,13 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 class PaperSummarizer:
-    def __init__(self, force_provider: Optional[str] = None):
+    def __init__(self, force_provider: Optional[str] = None, pdf_extraction: bool = True):
         """Initialize the paper summarizer with either OpenAI or Claude API"""
         # Initialize clients
         self.openai_client = None
         self.claude_client = None
         self.api_provider = "None"  # Default if no API is available
+        self.pdf_extraction = pdf_extraction and PDF_EXTRACTION_AVAILABLE
         
         # Initialize Claude client if API key is available (prioritize Claude)
         claude_api_key = os.getenv("ANTHROPIC_API_KEY")
@@ -81,162 +91,366 @@ class PaperSummarizer:
         
         # Log final selection
         logger.info(f"Using {self.api_provider} API provider for summarization")
+        logger.info(f"PDF extraction is {'enabled' if self.pdf_extraction else 'disabled'}")
         
-    def summarize_paper(self, paper, max_retries=3):
-        """
-        Generate a layman-friendly summary for the paper
+    def download_pdf(self, pdf_url: str) -> Optional[str]:
+        """Download a PDF from a URL
         
         Args:
-            paper (dict): Paper data including title, abstract, etc.
-            max_retries (int): Maximum number of retries if API call fails
+            pdf_url: URL of the PDF to download
             
         Returns:
-            str: A concise summary of the paper
+            Path to the downloaded PDF, or None if download failed
         """
-        title = paper['title']
-        abstract = paper['abstract']
-        
-        # If no API client is available, use fallback
-        if self.api_provider == "None":
-            logger.warning("No API client available, using fallback summary")
-            return self._generate_fallback_summary(paper)
-        
-        prompt = f"""
-        Summarize the following machine learning research paper in a concise, easy-to-understand way.
-        Make sure the summary is accessible to someone without a deep technical background in machine learning.
-        Include the key innovations, results, and potential real-world applications.
-        
-        Paper Title: {title}
-        
-        Abstract:
-        {abstract}
-        
-        Create a summary with these sections:
-        1. Key Innovation (1-2 sentences)
-        2. Main Finding (1-2 sentences)
-        3. Why It Matters (1-2 sentences)
-        4. How It Works (2-3 sentences in simple terms)
-        """
-        
-        for attempt in range(max_retries):
-            try:
-                logger.info(f"Generating summary for paper: {title} using {self.api_provider} (Attempt {attempt+1})")
+        try:
+            # Create a temporary file to store the PDF
+            temp_dir = tempfile.gettempdir()
+            temp_file = os.path.join(temp_dir, f"paper_{int(time.time())}.pdf")
+            
+            # Download the PDF
+            logger.info(f"Downloading PDF from {pdf_url}")
+            response = requests.get(pdf_url, stream=True, timeout=30)
+            if response.status_code != 200:
+                logger.error(f"Failed to download PDF: {response.status_code}")
+                return None
                 
-                if self.api_provider == "OpenAI" and self.openai_client:
-                    summary = self._generate_with_openai(prompt, title)
-                elif self.api_provider == "Claude" and self.claude_client:
-                    summary = self._generate_with_claude(prompt, title)
-                
-                if summary:
-                    return summary
-                                
-            except Exception as e:
-                logger.error(f"Error generating summary (Attempt {attempt+1}): {e}")
-                if attempt < max_retries - 1:
-                    wait_time = 2 ** attempt  # Exponential backoff
-                    logger.info(f"Retrying in {wait_time} seconds...")
-                    time.sleep(wait_time)
-                else:
-                    logger.error(f"Failed to generate summary after {max_retries} attempts")
-                    return self._generate_fallback_summary(paper)
-        
-        return self._generate_fallback_summary(paper)
+            # Write the PDF to the temporary file
+            with open(temp_file, 'wb') as f:
+                for chunk in response.iter_content(chunk_size=8192):
+                    f.write(chunk)
+                    
+            logger.info(f"PDF downloaded to {temp_file}")
+            return temp_file
+        except Exception as e:
+            logger.error(f"Error downloading PDF: {e}")
+            return None
     
-    def _generate_with_openai(self, prompt, title):
-        """Generate summary using OpenAI API"""
+    def extract_text_from_pdf(self, pdf_path: str, max_pages: int = 20) -> str:
+        """Extract text from a PDF file
+        
+        Args:
+            pdf_path: Path to the PDF file
+            max_pages: Maximum number of pages to extract
+            
+        Returns:
+            Extracted text from the PDF
+        """
+        if not self.pdf_extraction:
+            logger.warning("PDF extraction is disabled")
+            return ""
+            
+        try:
+            logger.info(f"Extracting text from PDF: {pdf_path}")
+            
+            # Try pdfplumber first (better quality but slower)
+            try:
+                text_parts = []
+                with pdfplumber.open(pdf_path) as pdf:
+                    # Limit to max_pages to avoid processing very large PDFs
+                    for i, page in enumerate(pdf.pages[:max_pages]):
+                        text = page.extract_text()
+                        if text:
+                            text_parts.append(text)
+                
+                full_text = "\n\n".join(text_parts)
+                
+                # If we got meaningful text, return it
+                if len(full_text) > 100:
+                    logger.info(f"Successfully extracted {len(full_text)} characters from PDF using pdfplumber")
+                    return full_text
+            except Exception as e:
+                logger.warning(f"Error using pdfplumber: {e}, falling back to PyPDF2")
+                
+            # Fall back to PyPDF2
+            text_parts = []
+            with open(pdf_path, 'rb') as file:
+                reader = PyPDF2.PdfReader(file)
+                # Limit to max_pages to avoid processing very large PDFs
+                for i in range(min(len(reader.pages), max_pages)):
+                    page = reader.pages[i]
+                    text = page.extract_text()
+                    if text:
+                        text_parts.append(text)
+            
+            full_text = "\n\n".join(text_parts)
+            logger.info(f"Successfully extracted {len(full_text)} characters from PDF using PyPDF2")
+            return full_text
+            
+        except Exception as e:
+            logger.error(f"Error extracting text from PDF: {e}")
+            return ""
+    
+    def get_paper_full_text(self, paper: Dict[str, Any]) -> str:
+        """Get the full text of a paper by downloading and extracting from PDF
+        
+        Args:
+            paper: Dictionary containing paper details
+            
+        Returns:
+            The full text of the paper, or empty string if extraction failed
+        """
+        if not self.pdf_extraction:
+            return ""
+            
+        try:
+            # Get the PDF URL
+            pdf_url = paper.get('pdf_url')
+            if not pdf_url:
+                logger.warning(f"No PDF URL for paper {paper['id']}")
+                return ""
+                
+            # Download the PDF
+            pdf_path = self.download_pdf(pdf_url)
+            if not pdf_path:
+                logger.warning(f"Failed to download PDF for paper {paper['id']}")
+                return ""
+                
+            # Extract text from the PDF
+            full_text = self.extract_text_from_pdf(pdf_path)
+            
+            # Clean up the temporary file
+            try:
+                os.unlink(pdf_path)
+            except:
+                pass
+                
+            return full_text
+        except Exception as e:
+            logger.error(f"Error getting full text for paper {paper['id']}: {e}")
+            return ""
+            
+    def summarize_paper(self, paper: Dict[str, Any], 
+                         max_retries: int = 3,
+                         initial_backoff: float = 1.0) -> str:
+        """Generate a summary for a research paper
+        
+        Args:
+            paper: Dictionary containing paper details
+            max_retries: Maximum number of retries on API failure
+            initial_backoff: Initial backoff time for retries (in seconds)
+            
+        Returns:
+            A structured summary of the paper
+        """
+        retry_count = 0
+        backoff = initial_backoff
+        
+        # Extract full text from PDF if available
+        full_text = ""
+        if self.pdf_extraction:
+            logger.info(f"Attempting to extract full text for paper {paper['id']}")
+            full_text = self.get_paper_full_text(paper)
+            if full_text:
+                logger.info(f"Successfully extracted {len(full_text)} characters of full text")
+            else:
+                logger.warning(f"Failed to extract full text, will use abstract only")
+        
+        while retry_count <= max_retries:
+            try:
+                logger.info(f"Attempt {retry_count + 1}/{max_retries + 1} to summarize paper {paper['id']}")
+                
+                # If we have an API client available, use it
+                if self.api_provider == "OpenAI" and self.openai_client:
+                    return self._generate_openai_summary(paper, full_text)
+                elif self.api_provider == "Claude" and self.claude_client:
+                    return self._generate_claude_summary(paper, full_text)
+                else:
+                    # Fallback if no API is available
+                    logger.warning(f"No API available, generating fallback summary for {paper['id']}")
+                    return self._generate_fallback_summary(paper)
+                
+            except Exception as e:
+                logger.error(f"Error generating summary (attempt {retry_count + 1}): {e}")
+                retry_count += 1
+                
+                if retry_count <= max_retries:
+                    # Exponential backoff with jitter
+                    sleep_time = backoff * (1 + random.random())
+                    logger.info(f"Retrying in {sleep_time:.2f} seconds...")
+                    time.sleep(sleep_time)
+                    backoff *= 2  # Exponential backoff
+                else:
+                    logger.error(f"Failed to generate summary after {max_retries} retries")
+                    return self._generate_fallback_summary(paper)
+
+    def _generate_openai_summary(self, paper: Dict[str, Any], full_text: str = "") -> str:
+        """Generate a summary using OpenAI API
+        
+        Args:
+            paper: Dictionary containing paper details
+            full_text: Full text of the paper extracted from PDF
+            
+        Returns:
+            A structured summary of the paper
+        """
+        # Create prompt for the API
+        system_prompt = """You are a helpful research assistant that specializes in summarizing machine learning research papers.
+Given information about a paper, create a comprehensive but concise summary in the following format:
+
+# SUMMARY
+[2-3 sentences overview of what the paper is about and its main contribution]
+
+# KEY POINTS
+- [Key point 1]
+- [Key point 2]
+- [Key point 3]
+- [Add more points as needed]
+
+# METHODOLOGY
+[2-3 sentences describing the approach/methodology]
+
+# RESULTS
+[1-2 sentences on the main results and their significance]
+
+# IMPLICATIONS
+[1-2 sentences on why this matters and potential applications]
+
+Keep the entire summary under 400 words. Focus on the most important aspects of the research."""
+        
+        # Build the paper content
+        paper_content = f"""Title: {paper['title']}
+Authors: {', '.join(paper['authors'])}
+Categories: {', '.join(paper['categories'])}
+Abstract: {paper['abstract']}"""
+
+        # Add full text if available
+        if full_text:
+            # Truncate full text to avoid token limits
+            max_fulltext_length = 8000
+            if len(full_text) > max_fulltext_length:
+                truncated_text = full_text[:max_fulltext_length]
+                paper_content += f"\n\nFull Paper Text (truncated): {truncated_text}..."
+            else:
+                paper_content += f"\n\nFull Paper Text: {full_text}"
+        
+        user_prompt = f"""Please summarize the following research paper:
+
+{paper_content}
+"""
+        
+        # Make the API call
+        logger.info(f"Making OpenAI API call to summarize paper: {paper['id']}")
         response = self.openai_client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="gpt-3.5-turbo-16k",  # Use a model with larger context window
             messages=[
-                {"role": "system", "content": "You are a helpful AI assistant that explains complex research papers in simple terms."},
-                {"role": "user", "content": prompt}
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
             ],
-            max_tokens=500,
-            temperature=0.7
+            temperature=0.3,
+            max_tokens=800
         )
         
-        summary = response.choices[0].message.content.strip()
-        logger.info(f"Successfully generated summary for: {title} with OpenAI")
+        # Extract and return the summary
+        summary = response.choices[0].message.content
+        logger.info(f"Successfully generated OpenAI summary for paper {paper['id']}")
         return summary
-    
-    def _generate_with_claude(self, prompt, title):
-        """Generate summary using Anthropic Claude API"""
-        try:
-            logger.info(f"Sending request to Claude API for paper: {title}")
-            logger.info(f"Prompt length: {len(prompt)} characters")
+
+    def _generate_claude_summary(self, paper: Dict[str, Any], full_text: str = "") -> str:
+        """Generate a summary using Claude API with enhanced technical detail and formatting
+        
+        Args:
+            paper: Dictionary containing paper details
+            full_text: Full text of the paper extracted from PDF
             
-            # Create a more technical and detailed prompt with bold markdown headings
-            enhanced_prompt = f"""
-            Please analyze this machine learning research paper in depth from a computer science perspective.
-            Focus on technical details, algorithms, and methodologies. Provide a detailed technical summary.
+        Returns:
+            A well-formatted, technical summary of the paper
+        """
+        try:
+            logger.info(f"Sending request to Claude API for paper: {paper['id']}")
+            
+            # Create a detailed technical prompt with clear formatting instructions
+            system_prompt = """You are an expert AI research assistant that specializes in analyzing and summarizing machine learning papers.
+Your task is to create technically accurate, well-formatted, and comprehensive summaries of scientific papers.
+Your summaries will use clean markdown formatting with proper headings, bullet points, and spacing.
+Focus on technical details while ensuring the content is well-organized and visually appealing when rendered.
 
-            Paper Title: {title}
+You are processing the FULL TEXT of the paper, not just the abstract. Your summary should reflect the complete content, 
+including methodology details, implementation specifics, experimental results, and limitations that are typically
+only found in the full paper text."""
+            
+            # Build the paper content
+            paper_content = f"""## Paper Details:
+- **Title**: {paper['title']}
+- **Authors**: {', '.join(paper['authors'])}
+- **Categories**: {', '.join(paper['categories'])}
 
-            Abstract or Content:
-            {prompt}
+## Abstract:
+{paper['abstract']}"""
 
-            Instructions:
-            1. Focus on the technical innovations, algorithms, architectures, and methodologies 
-            2. Include computational complexity, training details, and technical evaluation metrics
-            3. Analyze the code/pseudocode if mentioned, technical datasets used, and implementation details
-            4. Discuss technical limitations and potential future CS research directions
-            5. Use proper computer science terminology and be precise about technical concepts
+            # Add full text if available, with a clear marker
+            if full_text:
+                # Truncate full text to avoid token limits
+                max_fulltext_length = 25000  # Claude can handle longer contexts
+                if len(full_text) > max_fulltext_length:
+                    truncated_text = full_text[:max_fulltext_length]
+                    paper_content += f"\n\n## Full Paper Text (truncated):\n{truncated_text}..."
+                else:
+                    paper_content += f"\n\n## Full Paper Text:\n{full_text}"
+            
+            user_prompt = f"""# Paper Analysis Request
 
-            Format your summary with these exact section headings in markdown bold format:
+{paper_content}
 
-            **SUMMARY**:
-            [Provide a technical overview of the paper's contribution to computer science/ML]
+## Instructions:
+Analyze this machine learning research paper and create a comprehensive, technically detailed summary.
+Your summary should reflect a thorough understanding of the FULL PAPER, not just the abstract.
 
-            **TECHNICAL CONTRIBUTIONS**:
-            - [Technical contribution 1 with CS details]
-            - [Technical contribution 2 with CS details]
-            - [etc.]
+Your summary MUST use the exact following markdown structure:
 
-            **METHODOLOGY**:
-            [Include specific algorithms, model architectures, complexity analysis, optimization techniques]
+# {paper['title']}
 
-            **RESULTS & EVALUATION**:
-            [Technical performance metrics, comparison to SOTA, dataset details, statistical significance]
+## SUMMARY
+[2-3 sentences providing a technical overview of the paper's core contribution]
 
-            **SIGNIFICANCE & APPLICATIONS**:
-            [Impact on computer science research and potential real-world engineering applications]
+## KEY CONTRIBUTIONS
+- [Key technical contribution 1]
+- [Key technical contribution 2]
+- [Key technical contribution 3]
+- [Add more if needed, keeping each point concise but technical]
 
-            Your response must be technically precise and at a level appropriate for CS/ML practitioners.
-            """
+## METHODOLOGY
+[3-4 sentences describing the technical approach, algorithms, models, or frameworks used]
+
+## TECHNICAL DETAILS
+- **Architecture**: [Details about the neural architecture, model design, or algorithm structure]
+- **Datasets**: [Specific datasets used in the research]
+- **Training**: [Training methodology, optimization techniques, hyperparameters]
+- **Evaluation**: [Evaluation metrics, benchmarks, comparisons]
+
+## RESULTS
+[2-3 sentences on quantitative results and performance compared to prior work]
+
+## SIGNIFICANCE & APPLICATIONS
+[2-3 sentences on technical impact and potential real-world applications]
+
+Ensure all headings are properly formatted with markdown, text is well-spaced, and the summary is technically sound while being visually organized.
+Extract specific technical details from the full paper text wherever possible, rather than making general statements.
+"""
+            
+            # Make the API call with a technical focus
+            model = "claude-3-opus-20240229"  # Use the most capable Claude model
+            logger.info(f"Using {model} to generate summary")
             
             response = self.claude_client.messages.create(
-                model="claude-3-haiku-20240307",
-                max_tokens=1000,  # Increased for more technical detail
-                temperature=0.4,  # Lower for more precise technical responses
-                system="You are a computer science expert specializing in machine learning research. Provide technical, detailed summaries focusing on algorithms, methodologies, model architectures, and technical evaluation metrics. Use precise CS terminology and include markdown formatting for structure.",
+                model=model,
+                max_tokens=2000,  # Increased token count for more detailed summaries
+                temperature=0.3,  # Lower temperature for more precise technical content
+                system=system_prompt,
                 messages=[
-                    {"role": "user", "content": enhanced_prompt}
+                    {"role": "user", "content": user_prompt}
                 ]
             )
             
-            logger.info(f"Claude API response received")
             summary = response.content[0].text.strip()
             
-            # Clean up any potential HTML/formatting issues
-            summary = summary.replace("<br>", "")
+            # Ensure proper formatting is preserved
+            summary = summary.replace("\n\n\n", "\n\n").replace("\n\n\n\n", "\n\n")
             
-            logger.info(f"Successfully generated summary for: {title} with Claude. Summary length: {len(summary)} characters")
+            logger.info(f"Successfully generated Claude summary for paper {paper['id']}")
             return summary
+            
         except Exception as e:
-            logger.error(f"Claude API error with paper '{title}': {str(e)}")
-            logger.error(f"Error type: {type(e).__name__}")
-            logger.error(f"Error details: {repr(e)}")
-            
-            # Try a test call to see if the API is working at all
-            try:
-                test_response = self.claude_client.messages.create(
-                    model="claude-3-haiku-20240307",
-                    max_tokens=10,
-                    messages=[{"role": "user", "content": "Hello"}]
-                )
-                logger.error(f"Test call succeeded, so the issue is with this specific request: {test_response}")
-            except Exception as test_error:
-                logger.error(f"Test call also failed: {test_error} - API may be completely unavailable")
-            
+            logger.error(f"Error generating Claude summary for paper {paper['id']}: {e}")
             raise
 
     def _extract_key_sentences(self, text, num_sentences=5):
@@ -343,7 +557,7 @@ Note: This is an automatically generated summary based on key information extrac
             time.sleep(1)
             
         return papers
-        
+
 if __name__ == "__main__":
     # Test the summarizer
     from scraper.arxiv_scraper import ArxivScraper

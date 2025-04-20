@@ -91,11 +91,9 @@ footer {
     animation: pulsate 1.5s infinite;
 }
 
-/* Add custom styles for technical summary */
+/* Enhanced styles for markdown-formatted technical summaries */
 .technical-summary {
     font-family: 'Roboto', sans-serif;
-    white-space: pre-wrap;
-    word-wrap: break-word;
     font-size: 14px;
     line-height: 1.6;
     color: #333;
@@ -104,30 +102,47 @@ footer {
     text-align: justify;
 }
 
-.technical-summary h4 {
-    font-size: 16px;
+/* Main title */
+.technical-summary h1 {
+    font-size: 1.4rem;
     font-weight: 700;
-    margin-top: 16px;
-    margin-bottom: 10px;
+    margin: 0 0 1rem 0;
     color: #0d6efd;
-    border-bottom: 1px solid #eee;
-    padding-bottom: 5px;
+    border-bottom: 1px solid #dee2e6;
+    padding-bottom: 0.5rem;
 }
 
-.technical-summary h4:first-child {
-    margin-top: 0;
+/* Section headings */
+.technical-summary h2 {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin: 1.5rem 0 0.75rem 0;
+    color: #0d6efd;
+    padding-bottom: 0.25rem;
+    border-bottom: 1px solid #f1f1f1;
 }
 
-.technical-summary ul,
+/* First section heading needs less top margin */
+.technical-summary h2:first-of-type {
+    margin-top: 0.5rem;
+}
+
+/* Lists in technical summaries */
+.technical-summary ul, 
 .technical-summary ol {
     padding-left: 1.5rem;
     margin-bottom: 1rem;
 }
 
-/* Style for lists in technical summaries */
 .technical-summary ul li,
 .technical-summary ol li {
-    margin-bottom: 5px;
+    margin-bottom: 0.5rem;
+}
+
+/* Bold text in technical details */
+.technical-summary strong {
+    color: #495057;
+    font-weight: 600;
 }
 
 /* Add styles for the timestamp */
@@ -138,4 +153,10 @@ footer {
     font-style: italic;
     border-bottom: 1px solid #eee;
     padding-bottom: 10px;
+}
+
+/* Specific styling for technical details section */
+.technical-summary ul li strong {
+    display: inline-block;
+    min-width: 100px;
 } 
