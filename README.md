@@ -72,6 +72,8 @@ Check the status of your API connections and troubleshoot issues. As shown here,
    
 6. Access the web interface at `http://localhost:5001`
 
+   > **Note for macOS users**: If you encounter an error with port 5000 (the default Flask port), this is likely due to AirPlay using this port. The application has been configured to use port 5001 instead, but if you need to change it, you can modify the port in `app.py`.
+
 ## API Configuration
 
 The application supports two AI providers for generating summaries:
@@ -130,7 +132,10 @@ If you encounter API issues:
 2. Use the API Diagnostics tool in the Admin Panel to test connections
 3. Look at the `app.log` and `summarizer.log` files for detailed error messages
 
-As shown in the API Diagnostics screenshot, you can easily identify issues like quota limits and switch to an alternative provider.
+If you encounter port issues on macOS:
+1. The application is configured to use port 5001 to avoid conflicts with AirPlay (which uses port 5000)
+2. If needed, you can disable AirPlay Receiver in System Preferences > General > AirDrop & Handoff
+3. Alternatively, you can change the port in `app.py`
 
 ## Contributing
 
