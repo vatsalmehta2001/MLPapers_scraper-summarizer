@@ -49,4 +49,7 @@ Thumbs.db
 .idea/
 .vscode/
 *.swp
-*.swo 
+*.swo
+
+# Render deployment
+.render-buildlogs/ 

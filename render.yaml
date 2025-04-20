@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: mlpapers-summarizer
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn 'app:app' --bind=0.0.0.0:$PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11
+      - key: SECRET_KEY
+        generateValue: true
+      - key: FLASK_ENV
+        value: production
+      - key: FLASK_DEBUG
+        value: "False"
+      - key: PORT
+        fromService:
+          type: web
+          name: mlpapers-summarizer
+          envVarKey: PORT
+    autoDeploy: true 

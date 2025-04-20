@@ -124,6 +124,22 @@ You can also check the API connection status with the API Diagnostics tool in th
   - Check API status
   - Generate missing summaries
 
+## Deployment
+
+### Deploying on Render
+
+This project is configured for easy deployment to Render's free tier:
+
+1. Fork/clone this repository to your GitHub account
+2. Create a new Web Service on Render, connecting to your GitHub repository
+3. Render will automatically detect the configuration in `render.yaml`
+4. Add your API keys as environment variables in the Render dashboard:
+   - `OPENAI_API_KEY` (if using OpenAI)
+   - `ANTHROPIC_API_KEY` (if using Claude)
+5. The application will be available at your Render URL (e.g., `https://mlpapers-summarizer.onrender.com`)
+
+Note: On Render's free tier, the application will sleep after 15 minutes of inactivity. The first request after inactivity may take 30-60 seconds to respond.
+
 ## Troubleshooting
 
 If you encounter API issues:
