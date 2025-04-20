@@ -320,7 +320,8 @@ def generate_summary(arxiv_id):
     """Generate or regenerate a summary for a specific paper"""
     paper = db.get_paper_by_id(arxiv_id)
     if not paper:
-        return jsonify({'success': False, 'message': 'Paper not found'})
+        flash('Paper not found', 'danger')
+        return redirect(url_for('index'))
     
     try:
         # Start timing for performance tracking
@@ -338,7 +339,7 @@ def generate_summary(arxiv_id):
         
         logger.info(f"Starting summary generation for paper: {paper.title}")
         logger.info(f"Using API provider: {paper_summarizer.api_provider}")
-        logger.info(f"Paper details - ID: {paper.arxiv_id}, Title length: {len(paper.title)}, Abstract length: {len(paper.abstract)}")
+        logger.info(f"Paper details - ID: {paper.arxiv_id}, Title length: {len(paper.title)}, Abstract length: {len(paper.abstract) if paper.abstract else 0}")
         
         # Generate summary
         summary = paper_summarizer.summarize_paper(paper_dict)
@@ -346,13 +347,18 @@ def generate_summary(arxiv_id):
         # Calculate processing time
         processing_time = time.time() - start_time
         
+        if not summary:
+            summary = "Could not generate summary due to API limitations. Please try again later."
+            logger.warning(f"Empty summary returned for paper {arxiv_id}")
+        
         # Add a timestamp and processing info to make it clear this is a new summary
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
         pdf_note = "with full PDF text analysis" if paper_summarizer.pdf_extraction else "from abstract only"
-        summary = f"Generated on {timestamp} using {paper_summarizer.api_provider} API {pdf_note} (processed in {processing_time:.1f}s)\n\n{summary}"
+        provider_note = f"using {paper_summarizer.api_provider} API"
+        summary_with_meta = f"Generated on {timestamp} {provider_note} {pdf_note} (processed in {processing_time:.1f}s)\n\n{summary}"
         
         # Update paper with new summary
-        db.update_summary(arxiv_id, summary)
+        db.update_summary(arxiv_id, summary_with_meta)
         logger.info(f"Successfully generated and stored summary for: {paper.title}")
         
         # Redirect to paper detail page to show the new summary
@@ -362,6 +368,25 @@ def generate_summary(arxiv_id):
     except Exception as e:
         logger.error(f"Error generating summary for paper {arxiv_id}: {str(e)}")
         logger.error(traceback.format_exc())  # Log the full stack trace
+        
+        # Create a fallback summary message
+        fallback_message = f"""Generated on {datetime.now().strftime("%Y-%m-%d %H:%M")} (Error occurred)
+
+# Error Generating Summary
+
+We encountered an error while trying to generate a summary for this paper. This could be due to:
+
+- Temporary API service disruption
+- Rate limiting issues
+- Problems extracting text from the PDF
+
+**Technical Error:** {str(e)[:100]}...
+
+Please try again later. You can also check the paper directly on arXiv.
+"""
+        # Still update the database with the error message as the summary
+        db.update_summary(arxiv_id, fallback_message)
+        
         flash(f'Error generating summary: {str(e)}', 'danger')
         return redirect(url_for('paper_detail', arxiv_id=arxiv_id))
 

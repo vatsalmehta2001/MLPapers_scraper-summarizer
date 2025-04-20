@@ -9,6 +9,7 @@ from typing import Optional, Dict, Any, List
 import random
 from datetime import datetime
 import tempfile
+import traceback
 
 # Import for OpenAI
 try:
@@ -219,60 +220,91 @@ class PaperSummarizer:
             logger.error(f"Error getting full text for paper {paper['id']}: {e}")
             return ""
             
-    def summarize_paper(self, paper: Dict[str, Any], 
-                         max_retries: int = 3,
-                         initial_backoff: float = 1.0) -> str:
-        """Generate a summary for a research paper
+    def summarize_paper(self, paper):
+        """
+        Generate a summary for a research paper.
         
         Args:
-            paper: Dictionary containing paper details
-            max_retries: Maximum number of retries on API failure
-            initial_backoff: Initial backoff time for retries (in seconds)
+            paper (dict): Dictionary with paper details including id, title, abstract, etc.
             
         Returns:
-            A structured summary of the paper
+            str: Generated summary or None if generation failed.
         """
-        retry_count = 0
-        backoff = initial_backoff
+        try:
+            logger.info(f"Summarizing paper: {paper['id']}")
+            
+            # Get more content from PDF if available
+            paper_content = self.get_paper_full_text(paper) if self.pdf_extraction else None
+            
+            # Use the full paper content if available, otherwise fallback to abstract
+            content_to_summarize = paper_content or paper['abstract']
+            
+            # Try to generate summary with the current provider
+            max_retries = 3
+            retry_count = 0
+            backoff_time = 2  # Start with 2 seconds
+            
+            while retry_count < max_retries:
+                try:
+                    # Log which provider we're using
+                    logger.info(f"Attempting to summarize using {self.api_provider}")
+                    
+                    # Generate summary based on provider
+                    if self.api_provider == "Claude" and self.claude_client:
+                        summary = self._generate_claude_summary(paper, content_to_summarize)
+                        return summary
+                    elif self.api_provider == "OpenAI" and self.openai_client:
+                        summary = self._generate_openai_summary(paper, content_to_summarize)
+                        return summary
+                    else:
+                        # This should never happen due to initialization, but handle it anyway
+                        logger.error(f"No API client available for {self.api_provider}")
+                        # Try the other provider if available
+                        if self.api_provider == "Claude" and self.openai_client:
+                            logger.info("Falling back to OpenAI")
+                            self.api_provider = "OpenAI"
+                            continue
+                        elif self.api_provider == "OpenAI" and self.claude_client:
+                            logger.info("Falling back to Claude")
+                            self.api_provider = "Claude"
+                            continue
+                        else:
+                            # If no APIs are available, generate fallback summary
+                            return self._generate_fallback_summary(paper)
+                    
+                except Exception as e:
+                    retry_count += 1
+                    error_type = type(e).__name__
+                    logger.warning(f"API error ({error_type}) on attempt {retry_count}/{max_retries}: {str(e)}")
+                    
+                    # If we have multiple API options, try switching on failure
+                    if retry_count >= max_retries // 2:
+                        if self.api_provider == "Claude" and self.openai_client:
+                            logger.info("Switching to OpenAI after Claude API error")
+                            self.api_provider = "OpenAI"
+                            retry_count = max_retries // 2  # Reset counter partly to give the new API a fair chance
+                            continue
+                        elif self.api_provider == "OpenAI" and self.claude_client:
+                            logger.info("Switching to Claude after OpenAI API error")
+                            self.api_provider = "Claude"
+                            retry_count = max_retries // 2  # Reset counter partly
+                            continue
+                    
+                    if retry_count < max_retries:
+                        sleep_time = backoff_time * (2 ** (retry_count - 1))  # Exponential backoff
+                        logger.info(f"Retrying in {sleep_time} seconds...")
+                        time.sleep(sleep_time)
+            
+            # If we've exhausted all retries and APIs, use fallback
+            logger.warning("All API attempts failed, using fallback summary")
+            return self._generate_fallback_summary(paper)
+            
+        except Exception as e:
+            logger.error(f"Error in summarize_paper: {e}")
+            logger.error(traceback.format_exc())
+            # Return a minimal fallback summary when everything else fails
+            return self._generate_minimal_fallback(paper)
         
-        # Extract full text from PDF if available
-        full_text = ""
-        if self.pdf_extraction:
-            logger.info(f"Attempting to extract full text for paper {paper['id']}")
-            full_text = self.get_paper_full_text(paper)
-            if full_text:
-                logger.info(f"Successfully extracted {len(full_text)} characters of full text")
-            else:
-                logger.warning(f"Failed to extract full text, will use abstract only")
-        
-        while retry_count <= max_retries:
-            try:
-                logger.info(f"Attempt {retry_count + 1}/{max_retries + 1} to summarize paper {paper['id']}")
-                
-                # If we have an API client available, use it
-                if self.api_provider == "OpenAI" and self.openai_client:
-                    return self._generate_openai_summary(paper, full_text)
-                elif self.api_provider == "Claude" and self.claude_client:
-                    return self._generate_claude_summary(paper, full_text)
-                else:
-                    # Fallback if no API is available
-                    logger.warning(f"No API available, generating fallback summary for {paper['id']}")
-                    return self._generate_fallback_summary(paper)
-                
-            except Exception as e:
-                logger.error(f"Error generating summary (attempt {retry_count + 1}): {e}")
-                retry_count += 1
-                
-                if retry_count <= max_retries:
-                    # Exponential backoff with jitter
-                    sleep_time = backoff * (1 + random.random())
-                    logger.info(f"Retrying in {sleep_time:.2f} seconds...")
-                    time.sleep(sleep_time)
-                    backoff *= 2  # Exponential backoff
-                else:
-                    logger.error(f"Failed to generate summary after {max_retries} retries")
-                    return self._generate_fallback_summary(paper)
-
     def _generate_openai_summary(self, paper: Dict[str, Any], full_text: str = "") -> str:
         """Generate a summary using OpenAI API
         
@@ -537,6 +569,29 @@ Key points from the abstract:
 Note: This is an automatically generated summary based on key information extraction.
 """
         return fallback_summary.strip()
+
+    def _generate_minimal_fallback(self, paper):
+        """Generate a very simple fallback summary when all other methods fail"""
+        try:
+            # Extract 2-3 sentences from the abstract
+            key_sentences = self._extract_key_sentences(paper['abstract'], 3)
+            
+            return f"""
+# Summary
+
+**Note: This is an auto-extracted summary due to API limitations.**
+
+{' '.join(key_sentences)}
+
+# Key Points
+
+- This paper titled "{paper['title']}" was written by {', '.join(paper['authors'][:3])}{"..." if len(paper['authors']) > 3 else ""}.
+- Published in the following categories: {', '.join(paper['categories'])}.
+- For a better summary, please try again later or check the full paper.
+"""
+        except Exception:
+            # Absolute minimal fallback
+            return f"Unable to generate summary for '{paper['title']}'. Please check the paper abstract directly."
 
     def batch_summarize(self, papers):
         """
