@@ -2,6 +2,8 @@
 
 A web application that scrapes recent Machine Learning research papers from arXiv and generates summaries using either OpenAI or Claude API. This project demonstrates how to implement a resilient AI-powered system that can seamlessly switch between different language model providers.
 
+**Live Demo**: [https://mlpapers-summarizer.onrender.com](https://mlpapers-summarizer.onrender.com)
+
 ## Project Motivation
 
 I created this project to address a personal pain point. As I started building ML projects both for university assignments and personal skill improvement, I found myself spending excessive time searching through research papers to find useful techniques and stay current with the industry. 
@@ -136,7 +138,9 @@ This project is configured for easy deployment to Render's free tier:
 4. Add your API keys as environment variables in the Render dashboard:
    - `OPENAI_API_KEY` (if using OpenAI)
    - `ANTHROPIC_API_KEY` (if using Claude)
-5. The application will be available at your Render URL (e.g., `https://mlpapers-summarizer.onrender.com`)
+5. The application will be deployed and accessible via your Render URL
+
+**Auto-Deployment**: Once set up, any changes pushed to your main branch will automatically trigger a new deployment on Render. This continuous deployment feature ensures your live site always reflects the latest code in your repository.
 
 Note: On Render's free tier, the application will sleep after 15 minutes of inactivity. The first request after inactivity may take 30-60 seconds to respond.
 
