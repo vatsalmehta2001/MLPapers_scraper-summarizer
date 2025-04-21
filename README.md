@@ -96,16 +96,25 @@ The application supports two AI providers for generating summaries:
 
 You can provide either one or both API keys. The application is designed to work with just one of the services if needed.
 
-## Enhanced Summary Generation
+## Summary Generation
 
-The latest version now extracts text directly from paper PDFs to generate significantly more comprehensive summaries:
+The application uses two sophisticated approaches to generate summaries, depending on the available API:
 
-1. **PDF Download**: Automatically downloads the PDF from arXiv
-2. **Text Extraction**: Processes and extracts the content from the research paper
-3. **Deep Analysis**: AI models analyze the full paper content, not just the abstract
-4. **Structured Output**: Generates well-formatted summaries with detailed technical content
+### Claude Approach (PDF Direct Upload)
+When using Claude API, the application:
+1. Downloads the complete PDF from arXiv
+2. Sends the entire PDF file directly to Claude's API using its multimodal capabilities
+3. Enables Claude to "see" all figures, tables, and formatted content in the paper
+4. Produces more comprehensive summaries that include visual information
 
-This produces summaries that capture implementation details, experimental results, and nuances that aren't available in the abstract alone.
+### OpenAI Approach (Text Extraction)
+When using OpenAI API or when Claude is unavailable:
+1. Downloads the PDF from arXiv
+2. Extracts text content from the document (up to 20 pages)
+3. Sends the extracted text to the API
+4. Generates summaries based on the text content only
+
+Both methods produce well-structured summaries with technical details, but the Claude direct approach can often capture more nuanced information from figures and complex formatting that might be lost in text extraction.
 
 ## Switching Between API Providers
 
