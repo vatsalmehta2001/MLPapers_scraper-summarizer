@@ -157,6 +157,17 @@ If you encounter port issues on macOS:
 2. If needed, you can disable AirPlay Receiver in System Preferences > General > AirDrop & Handoff
 3. Alternatively, you can change the port in `app.py`
 
+### Known Deployment Issues
+
+**Note About the Live Demo**: The live demo at [https://mlpapers-summarizer.onrender.com](https://mlpapers-summarizer.onrender.com) may display an "Internal Server Error" when attempting to generate summaries. This is a limitation of the current hosting plan, not a bug in the application itself.
+
+The error occurs due to:
+1. **Memory Limitations**: PDF processing and AI summarization require significant memory which exceeds the limits of the current hosting plan
+2. **Execution Timeouts**: The hosting provider imposes strict timeouts which are insufficient for downloading PDFs and generating summaries
+3. **Resource Constraints**: The application faces resource limitations when processing large PDF files
+
+The application works properly in local environments with sufficient resources. The deployed demo still allows you to browse papers and view existing summaries, but generating new summaries might fail due to these hosting constraints.
+
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
