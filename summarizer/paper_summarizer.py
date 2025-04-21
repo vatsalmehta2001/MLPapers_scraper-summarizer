@@ -10,6 +10,7 @@ import random
 from datetime import datetime
 import tempfile
 import traceback
+import base64
 
 # Import for OpenAI
 try:
@@ -391,14 +392,14 @@ Abstract: {paper['abstract']}"""
             logger.info(f"Sending request to Claude API for paper: {paper['id']}")
             
             # Create a detailed technical prompt with clear formatting instructions
-            system_prompt = """You are an expert AI research assistant that specializes in analyzing and summarizing machine learning papers.
-Your task is to create technically accurate, well-formatted, and comprehensive summaries of scientific papers.
-Your summaries will use clean markdown formatting with proper headings, bullet points, and spacing.
-Focus on technical details while ensuring the content is well-organized and visually appealing when rendered.
+            system_prompt = """You are an expert computer science researcher specializing in analyzing and summarizing ML/AI research papers.
+Your task is to create technically precise, comprehensive summaries of computer science/AI papers.
+Focus on technical details, algorithmic approaches, model architectures, experimental methodology, and results.
+Use formal academic language and technical terminology appropriate for computer science audiences.
+Your summaries must be thorough, technically accurate, and include implementation details from the full paper.
 
-You are processing the FULL TEXT of the paper, not just the abstract. Your summary should reflect the complete content, 
-including methodology details, implementation specifics, experimental results, and limitations that are typically
-only found in the full paper text."""
+Structure your response with proper markdown formatting including code snippets where relevant.
+Extract specific metrics, hyperparameters, dataset details, and implementation details from the paper."""
             
             # Build the paper content
             paper_content = f"""## Paper Details:
@@ -412,7 +413,7 @@ only found in the full paper text."""
             # Add full text if available, with a clear marker
             if full_text:
                 # Truncate full text to avoid token limits
-                max_fulltext_length = 25000  # Claude can handle longer contexts
+                max_fulltext_length = 60000  # Claude can handle longer contexts
                 if len(full_text) > max_fulltext_length:
                     truncated_text = full_text[:max_fulltext_length]
                     paper_content += f"\n\n## Full Paper Text (truncated):\n{truncated_text}..."
@@ -424,49 +425,49 @@ only found in the full paper text."""
 {paper_content}
 
 ## Instructions:
-Analyze this machine learning research paper and create a comprehensive, technically detailed summary.
+Analyze this computer science research paper and create a comprehensive, technically detailed summary.
 Your summary should reflect a thorough understanding of the FULL PAPER, not just the abstract.
 
-Your summary MUST use the exact following markdown structure:
+Your summary MUST use the following markdown structure:
 
 # {paper['title']}
 
 ## SUMMARY
-[2-3 sentences providing a technical overview of the paper's core contribution]
+[3-4 paragraphs providing a detailed technical overview of the paper's contribution, methodology, and results]
 
 ## KEY CONTRIBUTIONS
-- [Key technical contribution 1]
-- [Key technical contribution 2]
-- [Key technical contribution 3]
-- [Add more if needed, keeping each point concise but technical]
+- [Key technical contribution 1 with specific details]
+- [Key technical contribution 2 with specific details]
+- [Key technical contribution 3 with specific details]
+- [Add more as needed, keeping each point technical and specific]
 
 ## METHODOLOGY
-[3-4 sentences describing the technical approach, algorithms, models, or frameworks used]
+[4-6 sentences describing the technical approach in detail, including algorithms, models, frameworks used]
 
 ## TECHNICAL DETAILS
-- **Architecture**: [Details about the neural architecture, model design, or algorithm structure]
-- **Datasets**: [Specific datasets used in the research]
-- **Training**: [Training methodology, optimization techniques, hyperparameters]
-- **Evaluation**: [Evaluation metrics, benchmarks, comparisons]
+- **Architecture**: [Detailed description of model architecture, with parameters, layers, and connectivity]
+- **Datasets**: [Comprehensive details about datasets, including sizes, preprocessing, and splits]
+- **Training**: [Specific training methodology, optimization algorithms, loss functions, hyperparameters]
+- **Evaluation**: [Detailed evaluation metrics, comparison methodologies, and statistical analysis]
 
 ## RESULTS
-[2-3 sentences on quantitative results and performance compared to prior work]
+[3-4 sentences on quantitative results with specific numbers and comparisons to baseline/SOTA methods]
 
-## SIGNIFICANCE & APPLICATIONS
-[2-3 sentences on technical impact and potential real-world applications]
+## IMPLICATIONS & FUTURE WORK
+[2-3 sentences on technical impact and potential future research directions]
 
-Ensure all headings are properly formatted with markdown, text is well-spaced, and the summary is technically sound while being visually organized.
-Extract specific technical details from the full paper text wherever possible, rather than making general statements.
+Ensure all headings are properly formatted with markdown, text is well-spaced, and the summary is technically precise.
+Extract specific technical details from the full paper text whenever possible - include actual numbers, parameters, and technical specifications.
 """
             
-            # Make the API call with a technical focus
+            # Make the API call with a technical focus and increased token limit
             model = "claude-3-opus-20240229"  # Use the most capable Claude model
             logger.info(f"Using {model} to generate summary")
             
             response = self.claude_client.messages.create(
                 model=model,
-                max_tokens=2000,  # Increased token count for more detailed summaries
-                temperature=0.3,  # Lower temperature for more precise technical content
+                max_tokens=4000,  # Significantly increased token count for more detailed summaries
+                temperature=0.2,  # Lower temperature for more precise technical content
                 system=system_prompt,
                 messages=[
                     {"role": "user", "content": user_prompt}
@@ -549,22 +550,61 @@ Extract specific technical details from the full paper text wherever possible, r
         
         impact_text = impact_sentences[0] if impact_sentences else "It contributes to advancing the field of machine learning research."
         
-        # Create a basic structured summary
+        # Try to extract technical details if they exist in the abstract
+        tech_details = {}
+        technique_patterns = [
+            (r'architecture[s]?\s*[:;]\s*([^.]+)', 'Architecture'),
+            (r'model[s]?\s*[:;]\s*([^.]+)', 'Architecture'),
+            (r'dataset[s]?\s*[:;]\s*([^.]+)', 'Datasets'),
+            (r'data\s*[:;]\s*([^.]+)', 'Datasets'),
+            (r'train(?:ing|ed)\s*[:;]\s*([^.]+)', 'Training'),
+            (r'learning rate[s]?\s*[:;]\s*([^.]+)', 'Training'),
+            (r'batch size[s]?\s*[:;]\s*([^.]+)', 'Training'),
+            (r'epochs\s*[:;]\s*([^.]+)', 'Training'),
+            (r'evaluation\s*[:;]\s*([^.]+)', 'Evaluation'),
+            (r'result[s]?\s*[:;]\s*([^.]+)', 'Results'),
+            (r'performance\s*[:;]\s*([^.]+)', 'Results'),
+            (r'accuracy\s*[:;]\s*([^.]+)', 'Results'),
+        ]
+        
+        for pattern, category in technique_patterns:
+            matches = re.findall(pattern, paper['abstract'], re.IGNORECASE)
+            if matches:
+                tech_details[category] = tech_details.get(category, []) + matches
+        
+        # Create a basic structured summary with enhanced formatting
         fallback_summary = f"""
+# SUMMARY
+
 Key Innovation: This paper introduces research on {main_topic}.
 
 Main Finding: {key_sentences[0] if key_sentences else "The paper presents new findings in this area of research."}
 
 Why It Matters: {impact_text}
 
-How It Works: The approach works {methods_text}. 
+How It Works: The approach works {methods_text}.
 
-Key points from the abstract:
-{f"• {key_sentences[0]}" if len(key_sentences) > 0 else ""}
-{f"• {key_sentences[1]}" if len(key_sentences) > 1 else ""}
-{f"• {key_sentences[2]}" if len(key_sentences) > 2 else ""}
-{f"• {key_sentences[3]}" if len(key_sentences) > 3 else ""}
-{f"• {key_sentences[4]}" if len(key_sentences) > 4 else ""}
+## Key points from the abstract:
+
+* {key_sentences[0] if len(key_sentences) > 0 else ""}
+* {key_sentences[1] if len(key_sentences) > 1 else ""}
+* {key_sentences[2] if len(key_sentences) > 2 else ""}
+* {key_sentences[3] if len(key_sentences) > 3 else ""}
+* {key_sentences[4] if len(key_sentences) > 4 else ""}
+
+## TECHNICAL DETAILS
+
+* <span class="category-label">Architecture</span> : {tech_details.get('Architecture', ['Vision encoder connected to decoder with MLP projector.'])[0] if 'Architecture' in tech_details else 'Not specified in abstract.'}
+
+* <span class="category-label">Datasets</span> : {tech_details.get('Datasets', ['Combined synthetic and real-world data.'])[0] if 'Datasets' in tech_details else 'Not specified in abstract.'}
+
+* <span class="category-label">Training</span> : {tech_details.get('Training', ['Multi-stage training process.'])[0] if 'Training' in tech_details else 'Training details not provided in abstract.'}
+
+* <span class="category-label">Evaluation</span> : {tech_details.get('Evaluation', ['Standard benchmarks for this research area.'])[0] if 'Evaluation' in tech_details else 'Evaluation methodology not specified in abstract.'}
+
+## RESULTS
+
+{tech_details.get('Results', ['The authors report improved performance compared to previous methods.'])[0] if 'Results' in tech_details else 'Results details not provided in abstract.'}
 
 Note: This is an automatically generated summary based on key information extraction.
 """
@@ -612,6 +652,113 @@ Note: This is an automatically generated summary based on key information extrac
             time.sleep(1)
             
         return papers
+
+    def summarize_paper_with_direct_pdf(self, paper):
+        """Generate summary by sending the PDF directly to Claude using multimodal capabilities
+        
+        Args:
+            paper: Dictionary with paper details including id, title, abstract, etc.
+            
+        Returns:
+            str: Generated summary or None if generation failed.
+        """
+        try:
+            logger.info(f"Attempting to summarize using direct PDF upload for: {paper['id']}")
+            
+            # Only proceed if we have Claude client and PDF URL
+            if not self.claude_client or not paper.get('pdf_url'):
+                logger.warning("Claude client not available or PDF URL missing")
+                return self.summarize_paper(paper)
+            
+            # Download the PDF
+            pdf_path = self.download_pdf(paper['pdf_url'])
+            if not pdf_path:
+                logger.warning(f"Failed to download PDF for {paper['id']}, falling back to standard method")
+                return self.summarize_paper(paper)
+            
+            try:
+                # Read the PDF as binary data
+                with open(pdf_path, 'rb') as f:
+                    pdf_content = f.read()
+                    
+                # Create system and user messages
+                system_prompt = """You are an expert computer science researcher specializing in analyzing technical ML/AI research papers.
+Create comprehensive, technically precise summaries focusing on algorithms, architectures, methodologies, and results.
+Use proper academic language and technical terminology for a computer science audience.
+Extract specific implementation details, metrics, hyperparameters, and technical insights from the full paper."""
+
+                # Create a multipart message with the PDF content
+                response = self.claude_client.messages.create(
+                    model="claude-3-opus-20240229",
+                    max_tokens=4000,
+                    temperature=0.2,
+                    system=system_prompt,
+                    messages=[
+                        {
+                            "role": "user", 
+                            "content": [
+                                {
+                                    "type": "text",
+                                    "text": f"""Please analyze this computer science research paper titled "{paper['title']}" and provide a comprehensive technical summary.
+
+Focus on the technical details, methodology, algorithms, architectures, and experimental results.
+Extract specific numbers, methodologies, and implementation details from the paper.
+
+Format your response with these sections:
+1. SUMMARY - A detailed technical overview (3-4 paragraphs)
+2. KEY CONTRIBUTIONS - Bullet points of specific technical contributions
+3. METHODOLOGY - Detailed explanation of methods, algorithms, and approaches
+4. TECHNICAL DETAILS - Architecture specifics, datasets, training procedures, evaluation metrics
+5. RESULTS - Quantitative results with specific numbers and comparisons
+6. IMPLICATIONS & FUTURE WORK
+
+Make this summary technically precise and comprehensive, suitable for computer science researchers."""
+                                },
+                                {
+                                    "type": "image",
+                                    "source": {
+                                        "type": "base64",
+                                        "media_type": "application/pdf",
+                                        "data": base64.b64encode(pdf_content).decode('utf-8')
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                )
+                
+                # Extract the summary from the response
+                summary = response.content[0].text.strip()
+                
+                # Add metadata about generation method
+                timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
+                summary_with_meta = f"Generated on {timestamp} using Claude API with direct PDF analysis\n\n{summary}"
+                
+                logger.info(f"Successfully generated summary via direct PDF upload for {paper['id']}")
+                
+                # Clean up the temporary file
+                try:
+                    os.unlink(pdf_path)
+                except:
+                    pass
+                
+                return summary_with_meta
+                
+            except Exception as e:
+                logger.error(f"Error in direct PDF summarization: {e}")
+                logger.error(traceback.format_exc())
+                # Clean up the temporary file
+                try:
+                    os.unlink(pdf_path)
+                except:
+                    pass
+                # Fall back to regular summarization
+                return self.summarize_paper(paper)
+            
+        except Exception as e:
+            logger.error(f"Error in direct PDF summarization outer try block: {e}")
+            logger.error(traceback.format_exc())
+            return self.summarize_paper(paper)
 
 if __name__ == "__main__":
     # Test the summarizer

@@ -6,7 +6,7 @@ import threading
 import traceback
 import logging
 from datetime import datetime, timedelta
-from flask import Flask, request, render_template, redirect, url_for, flash, jsonify
+from flask import Flask, request, render_template, redirect, url_for, flash, jsonify, session
 from dotenv import load_dotenv
 from sqlalchemy import text
 import markdown
@@ -324,6 +324,9 @@ def generate_summary(arxiv_id):
         return redirect(url_for('index'))
     
     try:
+        # Clear any existing flash messages to prevent duplicates
+        session.pop('_flashes', None)
+        
         # Start timing for performance tracking
         start_time = time.time()
         
@@ -339,30 +342,63 @@ def generate_summary(arxiv_id):
         
         logger.info(f"Starting summary generation for paper: {paper.title}")
         logger.info(f"Using API provider: {paper_summarizer.api_provider}")
+        logger.info(f"PDF URL: {paper.pdf_url}")
         logger.info(f"Paper details - ID: {paper.arxiv_id}, Title length: {len(paper.title)}, Abstract length: {len(paper.abstract) if paper.abstract else 0}")
         
-        # Generate summary
-        summary = paper_summarizer.summarize_paper(paper_dict)
+        # Check if we have a valid API provider
+        if paper_summarizer.api_provider == "None":
+            logger.warning("No API provider available. Using local fallback method.")
+            flash('No external API available. Using fallback summarization method.', 'warning')
+            summary = paper_summarizer.summarize_paper(paper_dict)
+            if not summary:
+                summary = "Could not generate summary due to API limitations. Please check your API keys."
+        # Use the direct PDF method if available
+        elif paper_summarizer.api_provider == "Claude" and paper_summarizer.claude_client:
+            logger.info("Using direct PDF upload method for Claude")
+            summary = paper_summarizer.summarize_paper_with_direct_pdf(paper_dict)
+            logger.info(f"Direct PDF summary length: {len(summary) if summary else 0}")
+        else:
+            # Generate summary with traditional method
+            logger.info(f"Using traditional text-based method with {paper_summarizer.api_provider}")
+            summary = paper_summarizer.summarize_paper(paper_dict)
+            logger.info(f"Traditional summary length: {len(summary) if summary else 0}")
         
         # Calculate processing time
         processing_time = time.time() - start_time
+        logger.info(f"Summary generation took {processing_time:.1f} seconds")
         
         if not summary:
             summary = "Could not generate summary due to API limitations. Please try again later."
             logger.warning(f"Empty summary returned for paper {arxiv_id}")
+            flash('Summary could not be generated. Please check your API keys.', 'danger')
+            db.update_summary(arxiv_id, summary)
+            return redirect(url_for('paper_detail', arxiv_id=arxiv_id))
         
-        # Add a timestamp and processing info to make it clear this is a new summary
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
-        pdf_note = "with full PDF text analysis" if paper_summarizer.pdf_extraction else "from abstract only"
-        provider_note = f"using {paper_summarizer.api_provider} API"
-        summary_with_meta = f"Generated on {timestamp} {provider_note} {pdf_note} (processed in {processing_time:.1f}s)\n\n{summary}"
+        # Add a timestamp and processing info if not already included
+        if not summary.startswith("Generated on"):
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
+            pdf_note = "with full PDF text analysis" if paper_summarizer.pdf_extraction else "from abstract only"
+            provider_note = f"using {paper_summarizer.api_provider} API"
+            summary_with_meta = f"Generated on {timestamp} {provider_note} {pdf_note} (processed in {processing_time:.1f}s)\n\n{summary}"
+        else:
+            summary_with_meta = summary
         
         # Update paper with new summary
+        before_update = paper.summary  # Store previous summary for comparison
         db.update_summary(arxiv_id, summary_with_meta)
-        logger.info(f"Successfully generated and stored summary for: {paper.title}")
+        after_update = db.get_paper_by_id(arxiv_id).summary  # Get fresh summary after update
+        
+        if before_update == after_update:
+            logger.error(f"Summary did not update in database! Before and after are identical.")
+            flash('Error: Summary was generated but not saved to database.', 'danger')
+        else:
+            logger.info(f"Successfully generated and stored summary for: {paper.title}")
+            if paper_summarizer.api_provider == "None":
+                flash('Fallback summary generated successfully (no API available).', 'warning')
+            else:
+                flash('Summary successfully generated!', 'success')
         
         # Redirect to paper detail page to show the new summary
-        flash('Summary successfully generated!', 'success')
         return redirect(url_for('paper_detail', arxiv_id=arxiv_id))
     
     except Exception as e:

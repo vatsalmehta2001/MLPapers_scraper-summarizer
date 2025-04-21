@@ -161,21 +161,40 @@ class DatabaseManager:
         Update the summary for a paper
         
         Args:
-            arxiv_id (str): arXiv ID
-            summary (str): The summary text
-            
-        Returns:
-            bool: True if successful, False otherwise
+            arxiv_id: ArXiv ID of the paper
+            summary: New summary to set
         """
-        paper = self.get_paper_by_id(arxiv_id)
-        if not paper:
-            logger.error(f"Paper {arxiv_id} not found in database")
+        try:
+            logging.info(f"Updating summary for paper {arxiv_id}")
+            paper = self.session.query(Paper).filter(Paper.arxiv_id == arxiv_id).first()
+            if paper:
+                old_summary = paper.summary
+                old_length = len(old_summary) if old_summary else 0
+                new_length = len(summary) if summary else 0
+                
+                # Check if summaries are identical
+                if old_summary == summary:
+                    logging.warning(f"New summary is identical to old summary for {arxiv_id}")
+                
+                paper.summary = summary
+                paper.updated_date = datetime.now()
+                self.session.commit()
+                
+                logging.info(f"Summary updated successfully for {arxiv_id}.")
+                logging.info(f"Old summary length: {old_length}, New summary length: {new_length}")
+                
+                # Check if it's a fallback summary
+                if "None API" in summary:
+                    logging.warning(f"Updated with fallback summary (None API) for {arxiv_id}")
+                
+                return True
+            else:
+                logging.error(f"Paper {arxiv_id} not found in database")
+                return False
+        except Exception as e:
+            logging.error(f"Error updating summary: {e}")
+            self.session.rollback()
             return False
-        
-        paper.summary = summary
-        self.session.commit()
-        logger.info(f"Updated summary for paper {arxiv_id}")
-        return True
     
     def add_papers_batch(self, papers):
         """

@@ -159,4 +159,69 @@ footer {
 .technical-summary ul li strong {
     display: inline-block;
     min-width: 100px;
+}
+
+/* Enhanced styles for technical details section */
+.technical-summary h2.section-title {
+    font-size: 1.6rem;
+    color: #0056b3;
+    background-color: #f0f8ff;
+    padding: 8px 12px;
+    border-radius: 4px;
+    margin: 1.5rem 0 1rem 0;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-left: 4px solid #0d6efd;
+}
+
+/* Technical details category labels */
+.technical-summary ul li .category-label {
+    display: inline-block;
+    min-width: 120px;
+    color: #0056b3;
+    font-weight: 700;
+    font-size: 1.05rem;
+    margin-right: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Improve spacing for bullet points in technical details */
+.technical-summary ul {
+    padding-left: 0;
+    list-style-type: none;
+}
+
+.technical-summary ul li {
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: baseline;
+    line-height: 1.6;
+}
+
+/* Bullet point styling */
+.technical-summary ul li:before {
+    content: "•";
+    color: #0d6efd;
+    font-size: 1.5rem;
+    margin-right: 10px;
+    line-height: 1;
+}
+
+/* Format the technical details content */
+.technical-summary ul li .detail-content {
+    flex: 1;
+}
+
+/* Special styling for TECHNICAL DETAILS and RESULTS headers */
+.technical-summary h2#technical-details,
+.technical-summary h2#results {
+    color: #0d6efd;
+    font-size: 1.75rem;
+    font-weight: 700;
+    background-color: #f8f9fa;
+    border-bottom: 2px solid #0d6efd;
+    padding: 8px 0;
+    margin: 2rem 0 1.5rem 0;
+    text-align: left;
 } 

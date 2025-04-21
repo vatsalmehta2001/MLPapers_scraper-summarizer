@@ -82,8 +82,8 @@
                                 <h5 class="mb-0">Layman Summary</h5>
                                 {% if paper.summary %}
                                 <form action="{{ url_for('generate_summary', arxiv_id=paper.arxiv_id) }}" method="post" class="d-inline">
-                                    <button type="submit" class="btn btn-sm btn-outline-secondary">
-                                        <i class="fas fa-sync-alt"></i> Regenerate
+                                    <button type="submit" class="btn btn-outline-success">
+                                        <i class="fas fa-sync-alt"></i> Generate New
                                     </button>
                                 </form>
                                 {% endif %}
@@ -107,8 +107,8 @@
                                     <em>No summary available for this paper.</em>
                                 </p>
                                 <form action="{{ url_for('generate_summary', arxiv_id=paper.arxiv_id) }}" method="post">
-                                    <button type="submit" class="btn btn-success">
-                                        <i class="fas fa-magic"></i> Generate Summary
+                                    <button type="submit" class="btn btn-success btn-lg">
+                                        <i class="fas fa-magic"></i> Generate
                                     </button>
                                 </form>
                                 {% endif %}
