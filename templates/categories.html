@@ -3,27 +3,52 @@
 {% block title %}Categories | ML Papers Summarizer{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-md-12">
-        <h1 class="mb-4">Browse by Category</h1>
-        
-        <div class="row row-cols-1 row-cols-md-3 g-4">
-            {% for category in categories %}
-            <div class="col">
-                <div class="card h-100 shadow-sm">
-                    <div class="card-body">
-                        <h5 class="card-title">{{ category.name }}</h5>
-                        <p class="card-text text-muted">{{ category.id }}</p>
-                    </div>
-                    <div class="card-footer bg-transparent">
-                        <a href="{{ url_for('index', category=category.id) }}" class="btn btn-primary w-100">
-                            View Papers
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h1 class="mb-4">Browse by Category</h1>
+            <p class="lead text-muted">Explore {{ total_papers }} machine learning research papers across {{ categories|length }} categories.</p>
+        </div>
+    </div>
+    
+    <div class="row row-cols-1 row-cols-md-3 g-4">
+        {% for category_info in categories_info %}
+        <div class="col">
+            <div class="card h-100 shadow-sm category-card">
+                <div class="card-header bg-light">
+                    <span class="badge bg-primary rounded-pill float-end">{{ category_info.count }} papers</span>
+                    <h5 class="card-title mb-0">{{ category_info.name }}</h5>
+                </div>
+                <div class="card-body d-flex flex-column">
+                    {% if category_info.name.startswith('cs.') %}
+                        {% if category_info.name == 'cs.AI' %}
+                        <p class="card-text">Artificial Intelligence research including knowledge representation, learning, and planning.</p>
+                        {% elif category_info.name == 'cs.LG' %}
+                        <p class="card-text">Machine Learning research including supervised, unsupervised, and reinforcement learning.</p>
+                        {% elif category_info.name == 'cs.CL' %}
+                        <p class="card-text">Computation and Language research, including NLP, speech processing, and text mining.</p>
+                        {% elif category_info.name == 'cs.CV' %}
+                        <p class="card-text">Computer Vision and Pattern Recognition including image and video processing.</p>
+                        {% elif category_info.name == 'cs.NE' %}
+                        <p class="card-text">Neural and Evolutionary Computing including neural networks and genetic algorithms.</p>
+                        {% elif category_info.name == 'cs.RO' %}
+                        <p class="card-text">Robotics research including motion planning, manipulation, and robot learning.</p>
+                        {% else %}
+                        <p class="card-text">Computer Science research papers in the {{ category_info.name }} category.</p>
+                        {% endif %}
+                    {% else %}
+                        <p class="card-text">Research papers in the {{ category_info.name }} category.</p>
+                    {% endif %}
+                    
+                    <div class="mt-auto">
+                        <a href="{{ url_for('index', category=category_info.id) }}" class="btn btn-primary btn-lg w-100">
+                            <i class="fas fa-book-open me-2"></i>Browse Papers
                         </a>
                     </div>
                 </div>
             </div>
-            {% endfor %}
         </div>
+        {% endfor %}
     </div>
 </div>
 {% endblock %} 

@@ -58,6 +58,56 @@ footer {
 .category-card {
     text-align: center;
     background: linear-gradient(to bottom right, #f8f9fa, #e9ecef);
+    transition: transform 0.3s, box-shadow 0.3s;
+    border: none;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.category-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+}
+
+.category-card .card-header {
+    background: linear-gradient(90deg, #0d6efd, #0dcaf0);
+    color: white;
+    border-bottom: none;
+    padding: 15px;
+    position: relative;
+}
+
+.category-card .card-title {
+    font-weight: 700;
+    margin-bottom: 5px;
+    font-size: 1.25rem;
+}
+
+.category-card .badge {
+    font-size: 0.85rem;
+    padding: 6px 12px;
+    background-color: rgba(255, 255, 255, 0.3);
+    color: white;
+    font-weight: 600;
+}
+
+.category-card .card-text {
+    color: #495057;
+    margin-bottom: 20px;
+    height: 4.5rem;
+    overflow: hidden;
+}
+
+.category-card .btn-primary {
+    background: linear-gradient(90deg, #0d6efd, #0d8bfd);
+    border: none;
+    padding: 10px 15px;
+    transition: all 0.3s;
+}
+
+.category-card .btn-primary:hover {
+    background: linear-gradient(90deg, #0b5ed7, #0b79e3);
+    transform: translateY(-2px);
 }
 
 /* Custom buttons */

@@ -548,13 +548,35 @@ with app.app_context():
 @app.route('/categories')
 def categories():
     """Show papers by category"""
-    all_papers = db.get_papers(limit=100)
-    categories = set()
-    for paper in all_papers:
-        categories.update(paper.categories_list)
+    # Get all papers
+    all_papers = db.get_papers(limit=500)
     
-    categories = sorted(list(categories))
-    return render_template('categories.html', categories=categories)
+    # Build categories with count
+    category_counts = {}
+    for paper in all_papers:
+        for category in paper.categories_list:
+            if category in category_counts:
+                category_counts[category] += 1
+            else:
+                category_counts[category] = 1
+    
+    # Sort categories by count (descending) and then by name
+    sorted_categories = sorted(category_counts.keys(), 
+                              key=lambda x: (-category_counts[x], x))
+    
+    # Create a dictionary with category info to pass to template
+    categories_info = []
+    for category in sorted_categories:
+        categories_info.append({
+            'id': category,
+            'name': category,
+            'count': category_counts[category],
+        })
+    
+    return render_template('categories.html', 
+                          categories=sorted_categories,
+                          categories_info=categories_info,
+                          total_papers=len(all_papers))
 
 @app.route('/about')
 def about():
